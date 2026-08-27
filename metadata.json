@@ -1,0 +1,6 @@
+{
+  "name": "বাউনিয়া বিল্ডার্স | Baunia Builders",
+  "description": "Member, Share, Savings & Financial Management System for Baunia Builders with bilingual support, financial accounting, reports, receipts, and role-based access.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
