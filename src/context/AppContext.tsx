@@ -723,6 +723,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, []);
 
+  // Periodic polling every 4 seconds for instant multi-portal sync (Super Admin <-> Accountant)
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    const syncPollInterval = setInterval(async () => {
+      try {
+        const { data: recs } = await supabase.from('receipts').select('*');
+        if (recs) setReceipts(recs.map(mapSupabaseReceipt));
+
+        const { data: mems } = await supabase.from('members').select('*');
+        if (mems) setMembers(mems.map(mapSupabaseMember));
+
+        const { data: txs } = await supabase.from('transactions').select('*');
+        if (txs) {
+          setTransactions(txs.map(t => ({
+            id: t.id,
+            transactionId: t.transaction_id,
+            date: t.date,
+            type: t.type,
+            refId: t.ref_id,
+            description: t.description,
+            debit: Number(t.debit),
+            credit: Number(t.credit),
+            balance: Number(t.balance),
+            user: t.user_name || 'System',
+            createdAt: t.created_at
+          })));
+        }
+      } catch (e) {
+        // silent polling failure catch
+      }
+    }, 4000);
+
+    return () => clearInterval(syncPollInterval);
+  }, []);
+
   // Sync to local storage
   useEffect(() => {
     try {
@@ -1411,8 +1447,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           join_date: m.joinDate || new Date().toISOString().split('T')[0],
           status: m.status || 'active',
           share_qty: m.shareQty || 1,
-          share_price: m.sharePrice || 100000,
-          total_share_value: m.totalShareValue || 100000,
           opening_balance: m.openingBalance || 0,
           current_due: m.currentDue !== undefined ? m.currentDue : ((m.shareQty || 1) * 25000),
           created_at: m.createdAt || new Date().toISOString(),
@@ -1607,8 +1641,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         join_date: m.joinDate || '2026-01-01',
         status: m.status || 'active',
         share_qty: m.shareQty || 1,
-        share_price: m.sharePrice || 100000,
-        total_share_value: m.totalShareValue || 100000,
         opening_balance: m.openingBalance || 0,
         current_due: m.currentDue !== undefined ? m.currentDue : ((m.shareQty || 1) * 25000),
         created_at: m.createdAt || new Date().toISOString(),
@@ -1631,8 +1663,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 
   const clearAllData = () => {
-    setMembers([]);
-    setShares([]);
+    const freshMembers = generateMembersFromRaw();
+    setMembers(freshMembers);
+    setShares(initialShareTransactions);
     setReceipts([]);
     setIncomes([]);
     setExpenses([]);
@@ -1645,7 +1678,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSelectedCertMemberId(null);
     localStorage.removeItem(LOCAL_STORAGE_KEY);
     localStorage.removeItem('BAUNIA_BUILDERS_DATA_V1');
-    showToast(language === 'bn' ? 'সকল ডেমো ডাটা সফলভাবে মুছে ফেলা হয়েছে' : 'All demo data cleared successfully', 'info');
+
+    if (isSupabaseConfigured()) {
+      supabase.from('receipts').delete().neq('id', 'CLEARED_NON_EXISTENT').then(({error}) => {
+        if (error) console.error('Clear receipts err:', error);
+      });
+      supabase.from('transactions').delete().neq('id', 'CLEARED_NON_EXISTENT').then(({error}) => {
+        if (error) console.error('Clear tx err:', error);
+      });
+      supabase.from('incomes').delete().neq('id', 'CLEARED_NON_EXISTENT').then(({error}) => {
+        if (error) console.error('Clear incomes err:', error);
+      });
+      supabase.from('expenses').delete().neq('id', 'CLEARED_NON_EXISTENT').then(({error}) => {
+        if (error) console.error('Clear expenses err:', error);
+      });
+      supabase.from('monthly_dues').delete().neq('id', 'CLEARED_NON_EXISTENT').then(({error}) => {
+        if (error) console.error('Clear dues err:', error);
+      });
+    }
+
+    showToast(language === 'bn' ? 'সকল ডেমো ও রসিদ ডাটা সফলভাবে মুছে ফেলা হয়েছে' : 'All demo and receipt data cleared successfully', 'info');
   };
 
   const resetToDefaultData = () => {

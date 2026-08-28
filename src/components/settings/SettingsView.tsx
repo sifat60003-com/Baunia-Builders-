@@ -438,8 +438,6 @@ CREATE TABLE IF NOT EXISTS members (
   join_date TEXT,
   status TEXT DEFAULT 'active',
   share_qty INT DEFAULT 1,
-  share_price NUMERIC DEFAULT 100000,
-  total_share_value NUMERIC DEFAULT 100000,
   opening_balance NUMERIC DEFAULT 0,
   current_due NUMERIC DEFAULT 25000,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

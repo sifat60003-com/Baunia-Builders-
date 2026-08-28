@@ -224,6 +224,15 @@ export const CollectPaymentView: React.FC = () => {
     let isExtraMonth = false;
 
     if (paymentType === 'monthly_fee') {
+      const alreadyPaidMonths = selectedMonthIds.filter(mId => {
+        const statusObj = memberMonthlyStatus.find(s => s.schedule.id === mId);
+        return statusObj && statusObj.status === 'paid';
+      });
+      if (alreadyPaidMonths.length > 0) {
+        showToast('নির্বাচিত মাস(সমূহ) ইতিমধ্যে পরিশোধিত হয়েছে! ডাবল রসিদ কাটা নিষিদ্ধ।', 'error');
+        return;
+      }
+
       const monthNamesList = selectedSchedules.map(s => s.nameBn);
       isExtraMonth = selectedSchedules.some(s => s.isExtraMonth);
       
