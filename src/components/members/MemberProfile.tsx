@@ -74,6 +74,10 @@ export const MemberProfile: React.FC = () => {
     motherName: '',
     presentAddress: '',
     permanentAddress: '',
+    spouseName: '',
+    dob: '',
+    gender: 'male' as 'male' | 'female' | 'other',
+    birthRegNo: '',
     nomineeAddress: '',
     nomineePhone: '',
     pin: '',
@@ -93,6 +97,10 @@ export const MemberProfile: React.FC = () => {
       motherName: member.motherName || '',
       presentAddress: member.presentAddress || '',
       permanentAddress: member.permanentAddress || '',
+      spouseName: member.spouseName || '',
+      dob: member.dob || '',
+      gender: member.gender || 'male',
+      birthRegNo: member.birthRegNo || '',
       nomineeAddress: member.nomineeAddress || '',
       nomineePhone: member.nomineePhone || '',
       pin: member.pin || (member.mobile ? member.mobile.slice(-4) : '1234'),
@@ -116,6 +124,10 @@ export const MemberProfile: React.FC = () => {
       motherName: editForm.motherName.trim(),
       presentAddress: editForm.presentAddress.trim(),
       permanentAddress: editForm.permanentAddress.trim(),
+      spouseName: editForm.spouseName.trim() || undefined,
+      dob: editForm.dob.trim() || undefined,
+      gender: editForm.gender,
+      birthRegNo: editForm.birthRegNo.trim() || undefined,
       nomineeAddress: editForm.nomineeAddress.trim(),
       nomineePhone: editForm.nomineePhone.trim(),
       pin: editForm.pin.trim() || undefined,
@@ -1160,32 +1172,54 @@ export const MemberProfile: React.FC = () => {
                     <option value="pending">পেন্ডিং (Pending)</option>
                   </select>
                 </div>
+                {/* Spouse Name */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">স্বামী / স্ত্রী নাম</label>
+                  <input type="text" value={editForm.spouseName} onChange={(e) => setEditForm({ ...editForm, spouseName: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
+                </div>
+                {/* DOB */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">জন্ম তারিখ</label>
+                  <input type="date" value={editForm.dob} onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
+                </div>
+                {/* Gender */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">লিঙ্গ</label>
+                  <select value={editForm.gender} onChange={(e) => setEditForm({ ...editForm, gender: e.target.value as any })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
+                    <option value="male">পুরুষ</option>
+                    <option value="female">মহিলা</option>
+                    <option value="other">অন্যান্য</option>
+                  </select>
+                </div>
+                {/* Birth Reg No */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">জন্ম নিবন্ধন নং</label>
+                  <input type="text" value={editForm.birthRegNo} onChange={(e) => setEditForm({ ...editForm, birthRegNo: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
+                </div>
               </div>
 
               {/* Present Address */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  বর্তমান ঠিকানা
-                </label>
-                <input
-                  type="text"
-                  value={editForm.presentAddress}
-                  onChange={(e) => setEditForm({ ...editForm, presentAddress: e.target.value })}
-                  className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 outline-hidden focus:border-blue-500 focus:bg-white"
-                />
+                <label className="block text-xs font-bold text-slate-700 mb-1">বর্তমান ঠিকানা</label>
+                <input type="text" value={editForm.presentAddress} onChange={(e) => setEditForm({ ...editForm, presentAddress: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
               </div>
 
               {/* Permanent Address */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  স্থায়ী ঠিকানা
-                </label>
-                <input
-                  type="text"
-                  value={editForm.permanentAddress}
-                  onChange={(e) => setEditForm({ ...editForm, permanentAddress: e.target.value })}
-                  className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 outline-hidden focus:border-blue-500 focus:bg-white"
-                />
+                <label className="block text-xs font-bold text-slate-700 mb-1">স্থায়ী ঠিকানা</label>
+                <input type="text" value={editForm.permanentAddress} onChange={(e) => setEditForm({ ...editForm, permanentAddress: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
+              </div>
+              
+              {/* Nominee Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-100">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">নমিনির বর্তমান ঠিকানা</label>
+                  <input type="text" value={editForm.nomineeAddress} onChange={(e) => setEditForm({ ...editForm, nomineeAddress: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">নমিনির ফোন নম্বর</label>
+                  <input type="text" value={editForm.nomineePhone} onChange={(e) => setEditForm({ ...editForm, nomineePhone: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
+                </div>
               </div>
 
               {/* Action buttons */}
