@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   ArrowLeft, 
@@ -7,7 +7,9 @@ import {
   Share2, 
   CheckCircle2, 
   Receipt,
-  Scissors
+  Scissors,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { formatCurrency, formatDate, numberToBengaliWords, numberToEnglishWords, toBnDigits } from '../../utils/formatters';
@@ -21,8 +23,11 @@ export const MoneyReceiptModal: React.FC = () => {
     settings, 
     language, 
     t, 
-    members 
+    members,
+    deleteReceipt 
   } = useApp();
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const receipt = receipts.find(r => r.id === selectedReceiptId) || receipts[0];
 
@@ -243,6 +248,14 @@ export const MoneyReceiptModal: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>ভুল রশিদ ডিলিট</span>
+          </button>
+
+          <button
             onClick={handlePrint}
             className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer"
           >
@@ -271,6 +284,68 @@ export const MoneyReceiptModal: React.FC = () => {
         {renderReceiptCopy('অফিস কপি (Office Copy)')}
 
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 no-print">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-base">ভুল রশিদ মোছার নিশ্চিতকরণ</h3>
+                <p className="text-xs text-slate-500">Delete Incorrect Receipt</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1.5 font-medium">
+              <div className="flex justify-between">
+                <span className="text-slate-500">রশিদ নং:</span>
+                <span className="font-mono font-bold text-blue-700">{receipt.receiptNo}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">সদস্যের নাম:</span>
+                <span className="font-bold text-slate-900">{receipt.memberName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">সদস্য আইডি:</span>
+                <span className="font-mono text-slate-700">{receipt.memberId}</span>
+              </div>
+              <div className="flex justify-between pt-1 border-t border-slate-200">
+                <span className="text-slate-500">টাকার পরিমাণ:</span>
+                <span className="font-extrabold text-rose-700">{formatCurrency(receipt.amount, true)}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed bg-amber-50 p-3 rounded-xl border border-amber-200/70 text-amber-900">
+              ⚠️ <strong>সতর্কতা:</strong> রশিদটি মুছে ফেললে সদস্যের মোট জমা ৳ {receipt.amount.toLocaleString('en-IN')} কমে যাবে এবং ক্যাশ লেজার থেকে এই জমা বাতিল হবে।
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                বাতিল করুন
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteReceipt(receipt.id);
+                  setShowDeleteConfirm(false);
+                  setActiveTab('receipts');
+                }}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>হ্যাঁ, রশিদটি মুছে ফেলুন</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

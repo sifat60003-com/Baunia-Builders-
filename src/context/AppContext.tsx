@@ -1208,14 +1208,52 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const deleteReceipt = (id: string) => {
+    const target = receipts.find(r => r.id === id);
+    if (target) {
+      // Revert member balance & due
+      setMembers(prev => prev.map(m => {
+        if (m.id === target.memberId) {
+          const newDeposit = Math.max(0, m.currentDeposit - target.amount);
+          const isDueRelated = target.paymentType === 'previous_due' || target.paymentType === 'monthly_fee';
+          const newDue = m.currentDue + (isDueRelated ? target.amount : 0);
+
+          if (isSupabaseConfigured()) {
+            supabase.from('members').update({
+              opening_balance: newDeposit,
+              current_due: newDue,
+              updated_at: new Date().toISOString()
+            }).eq('id', m.id).then(({ error }) => {
+              if (error) console.error('Supabase update member deposit error:', error);
+            });
+          }
+
+          return {
+            ...m,
+            currentDeposit: newDeposit,
+            currentDue: newDue,
+          };
+        }
+        return m;
+      }));
+
+      // Revert financial transaction ledger
+      setTransactions(prev => prev.filter(t => t.refId !== target.receiptNo));
+      if (isSupabaseConfigured()) {
+        supabase.from('transactions').delete().eq('ref_id', target.receiptNo).then(({ error }) => {
+          if (error) console.error('Supabase delete transaction error:', error);
+        });
+      }
+    }
+
     setReceipts(prev => prev.filter(r => r.id !== id));
     if (isSupabaseConfigured()) {
-      supabase.from('receipts').delete().eq('id', id).then(({error}) => {
+      supabase.from('receipts').delete().eq('id', id).then(({ error }) => {
         if (error) console.error('Supabase delete receipt err:', error);
       });
     }
-    addAuditLog('RECEIPT_DELETE', `রশিদ বাতিল/মুছে ফেলা হয়েছে: ${id}`);
-    showToast(t('successDeleted'), 'info');
+
+    addAuditLog('RECEIPT_DELETE', `ভুল রসিদ বাতিল করা হয়েছে: ${target?.receiptNo || id} (পরিমাণ: ৳ ${target?.amount || 0})`);
+    showToast(`রশিদ নং ${target?.receiptNo || id} সফলভাবে মুছে ফেলা হয়েছে!`, 'warning');
   };
 
   // Income Management
