@@ -88,7 +88,8 @@ export const DueManagement: React.FC = () => {
   // Generate Reminder SMS
   const generateSmsText = (dueData: { memberName: string; dueMonths: string[]; dueAmount: number }) => {
     const monthsStr = dueData.dueMonths.slice(0, 3).join(', ') + (dueData.dueMonths.length > 3 ? ` ও অন্যান্য` : '');
-    return `সম্মানিত ${dueData.memberName}, বাউনিয়া বিল্ডার্স-এ আপনার (${monthsStr}) বাবদ মোট বকেয়া ৳ ${dueData.dueAmount.toLocaleString('en-IN')} টাকা। দ্রুত পরিশোধের বিনীত অনুরোধ রইল। ধন্যবাদ। হটলাইন: 01833-805170`;
+    const hotline = settings?.phones?.[0] || '01833-405170';
+    return `সম্মানিত ${dueData.memberName}, বাউনিয়া বিল্ডার্স-এ আপনার (${monthsStr}) বাবদ মোট বকেয়া ৳ ${dueData.dueAmount.toLocaleString('en-IN')} টাকা। দ্রুত পরিশোধের বিনীত অনুরোধ রইল। ধন্যবাদ। হটলাইন: ${hotline}`;
   };
 
   const handleCopySms = (text: string) => {

@@ -21,7 +21,7 @@ export const initialSettings: OrganizationSettings = {
   logoUrl: bauniaLogo,
   addressBn: 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০',
   addressEn: 'Baunia Pukurpar, Turag, Dhaka-1230',
-  phones: ['01833-805170', '01711-280514', '01739-704588'],
+  phones: ['01833-405170', '01711-280514', '01739-704588'],
   email: 'info@bauniabuilders.com',
   website: 'https://bauniabuilders.com',
   defaultSharePrice: 100000,

@@ -174,7 +174,7 @@ export const ReportsView: React.FC = () => {
             BAUNIA BUILDERS | DHAKA, BANGLADESH
           </div>
           <p className="text-xs text-slate-600">
-            {settings.addressBn || 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০'} | মোবাইল: 01833-805170, 01711-280514
+            {settings.addressBn || 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০'} | মোবাইল: {settings.phones?.join(', ') || '01833-405170, 01711-280514'}
           </p>
           <div className="pt-2">
             <span className="inline-block px-4 py-1 bg-slate-900 text-white text-xs font-bold rounded-lg uppercase tracking-wider">

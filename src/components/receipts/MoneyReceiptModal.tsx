@@ -69,7 +69,7 @@ export const MoneyReceiptModal: React.FC = () => {
               BAUNIA BUILDERS
             </div>
             <p className="text-[10px] text-slate-600 mt-0.5">
-              {settings.addressBn || 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০'} | ফোন: 01833-805170, 01711-280514
+              {settings.addressBn || 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০'} | ফোন: {settings.phones?.join(', ') || '01833-405170, 01711-280514'}
             </p>
           </div>
         </div>

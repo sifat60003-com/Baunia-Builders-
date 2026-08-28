@@ -117,7 +117,7 @@ export const ShareCertificate: React.FC = () => {
               BAUNIA BUILDERS | DHAKA, BANGLADESH
             </div>
             <p className="text-[11px] text-slate-600 font-medium max-w-lg mx-auto">
-              বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০ | মোবাইল: 01833-805170, 01711-280514
+              বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০ | মোবাইল: 01833-405170, 01711-280514
             </p>
           </div>
 

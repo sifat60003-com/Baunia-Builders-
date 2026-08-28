@@ -314,7 +314,7 @@ export const MemberForm: React.FC = () => {
                   required
                   value={mobile}
                   onChange={(e) => setMobile(e.target.value)}
-                  placeholder="01833-805170"
+                  placeholder="01833-405170"
                   className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium font-mono"
                 />
               </div>

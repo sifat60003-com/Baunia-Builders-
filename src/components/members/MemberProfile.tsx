@@ -877,7 +877,7 @@ export const MemberProfile: React.FC = () => {
           <div className="text-center pb-4 border-b-2 border-blue-900">
             <h1 className="text-2xl font-black text-blue-950">বাউনিয়া বিল্ডার্স</h1>
             <p className="text-xs font-semibold text-slate-700 mt-0.5">
-              {settings.addressBn || 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০'} | ফোন: 01833-805170, 01711-280514
+              {settings.addressBn || 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০'} | ফোন: {settings.phones?.join(', ') || '01833-405170, 01711-280514'}
             </p>
             <div className="inline-block mt-3 px-4 py-1 bg-blue-900 text-white text-xs font-bold rounded-md uppercase tracking-wider">
               সদস্য আর্থিক হিসাব বিবরণী (Member Financial Statement)

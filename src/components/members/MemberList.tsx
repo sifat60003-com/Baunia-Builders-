@@ -261,7 +261,7 @@ export const MemberList: React.FC = () => {
         {/* Printable Organization Header in Print Mode */}
         <div className="hidden print:block p-6 border-b border-slate-200 text-center">
           <h2 className="text-xl font-bold text-slate-900">বাউনিয়া বিল্ডার্স</h2>
-          <p className="text-xs text-slate-600">বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০ | ফোন: 01833-805170, 01711-280514</p>
+          <p className="text-xs text-slate-600">বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০ | ফোন: 01833-405170, 01711-280514</p>
           <h3 className="text-sm font-bold mt-2 underline">সদস্য ও শেয়ার তালিকা</h3>
         </div>
 
