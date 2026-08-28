@@ -1001,6 +1001,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (memberData.currentDue !== undefined) supabasePayload.current_due = memberData.currentDue;
       if (memberData.presentAddress !== undefined) supabasePayload.present_address = memberData.presentAddress;
       if (memberData.permanentAddress !== undefined) supabasePayload.permanent_address = memberData.permanentAddress;
+      if (memberData.nomineeAddress !== undefined) supabasePayload.nominee_address = memberData.nomineeAddress;
+      if (memberData.nomineePhone !== undefined) supabasePayload.nominee_phone = memberData.nomineePhone;
       supabasePayload.updated_at = new Date().toISOString();
 
       supabase.from('members').update(supabasePayload).eq('id', id).then(({ error }) => {

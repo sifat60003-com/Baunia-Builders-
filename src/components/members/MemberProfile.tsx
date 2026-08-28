@@ -74,6 +74,8 @@ export const MemberProfile: React.FC = () => {
     motherName: '',
     presentAddress: '',
     permanentAddress: '',
+    nomineeAddress: '',
+    nomineePhone: '',
     pin: '',
     photoUrl: '',
     status: 'active' as 'active' | 'inactive' | 'pending'
@@ -91,6 +93,8 @@ export const MemberProfile: React.FC = () => {
       motherName: member.motherName || '',
       presentAddress: member.presentAddress || '',
       permanentAddress: member.permanentAddress || '',
+      nomineeAddress: member.nomineeAddress || '',
+      nomineePhone: member.nomineePhone || '',
       pin: member.pin || (member.mobile ? member.mobile.slice(-4) : '1234'),
       photoUrl: member.photoUrl || '',
       status: member.status || 'active'
@@ -112,6 +116,8 @@ export const MemberProfile: React.FC = () => {
       motherName: editForm.motherName.trim(),
       presentAddress: editForm.presentAddress.trim(),
       permanentAddress: editForm.permanentAddress.trim(),
+      nomineeAddress: editForm.nomineeAddress.trim(),
+      nomineePhone: editForm.nomineePhone.trim(),
       pin: editForm.pin.trim() || undefined,
       photoUrl: editForm.photoUrl.trim() || undefined,
       status: editForm.status
