@@ -221,12 +221,20 @@ export function getMemberMonthlyStatusList(
 
   // 2. Process each receipt
   memberReceipts.forEach(r => {
-    const pType = r.paymentType || r.payment_type || r.type || 'monthly_fee';
+    const pType = String(r.paymentType || r.payment_type || r.type || 'monthly_fee').toLowerCase().trim();
     const isEligibleType = 
       pType === 'monthly_fee' || 
+      pType === 'monthly' ||
       pType === 'savings_deposit' || 
       pType === 'special_deposit' ||
-      pType === 'previous_due';
+      pType === 'previous_due' ||
+      pType === 'member_payment' ||
+      pType === 'installment' ||
+      pType === 'extra_month' ||
+      pType === 'share_payment' ||
+      pType === 'other' ||
+      pType === 'paid' ||
+      pType === 'active';
 
     if (!isEligibleType) return;
 

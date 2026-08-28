@@ -128,6 +128,7 @@ export interface PaymentReceipt {
   notes?: string;
   previousDue?: number;
   remainingDue?: number;
+  status?: string;
   collectorId: string;
   collectorName: string;
   createdAt: string;

@@ -189,6 +189,23 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEY = 'BAUNIA_BUILDERS_DATA_V4';
+const AUTH_SESSION_KEY = 'BAUNIA_BUILDERS_AUTH_SESSION_V2';
+
+const getInitialAuthSession = (usersList: User[]) => {
+  try {
+    const stored = localStorage.getItem(AUTH_SESSION_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.isAuthenticated && parsed.userId) {
+        const foundUser = usersList.find(u => u.id === parsed.userId) || usersList.find(u => u.role === parsed.role) || usersList[0];
+        return { isAuthenticated: true, user: foundUser };
+      }
+    }
+  } catch (e) {
+    console.error('Failed to parse auth session:', e);
+  }
+  return { isAuthenticated: false, user: usersList[0] };
+};
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Load state from local storage or mock initial
@@ -292,11 +309,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const initialData = loadInitialData();
+  const initialAuth = getInitialAuthSession(initialData.users);
 
   const [isSupabaseLoading, setIsSupabaseLoading] = useState<boolean>(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticatedState] = useState<boolean>(initialAuth.isAuthenticated);
   const [language, setLanguage] = useState<Language>('bn');
-  const [currentUser, setCurrentUser] = useState<User>(initialData.users[0]);
+  const [currentUser, setCurrentUserState] = useState<User>(initialAuth.user);
+
+  const setIsAuthenticated = (auth: boolean) => {
+    setIsAuthenticatedState(auth);
+    if (auth) {
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ isAuthenticated: true, userId: currentUser.id, role: currentUser.role }));
+    } else {
+      localStorage.removeItem(AUTH_SESSION_KEY);
+    }
+  };
+
+  const setCurrentUser = (user: User) => {
+    setCurrentUserState(user);
+    if (isAuthenticated) {
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ isAuthenticated: true, userId: user.id, role: user.role }));
+    }
+  };
   const [users, setUsers] = useState<User[]>(initialData.users);
   const [settings, setSettings] = useState<OrganizationSettings>(initialData.settings);
   const [members, setMembers] = useState<Member[]>(initialData.members);
@@ -397,25 +431,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return {
       id: r.id,
-      receiptNo: r.receipt_no || r.id,
-      date: r.date || new Date().toISOString().split('T')[0],
-      memberId: r.member_id,
-      memberName: r.member_name || 'সদস্য',
-      memberMobile: r.member_mobile || '',
+      receiptNo: r.receipt_no || r.receiptNo || r.id,
+      date: r.date || r.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+      memberId: String(r.member_id || r.memberId || ''),
+      memberName: r.member_name || r.memberName || 'সদস্য',
+      memberMobile: r.member_mobile || r.memberMobile || r.mobile || '',
       paymentType: pType,
-      paymentMonth: r.payment_month || undefined,
-      paymentMonths: pMonths.length > 0 ? pMonths : undefined,
-      monthBreakdown: mBreakdown.length > 0 ? mBreakdown : undefined,
+      paymentMonth: r.payment_month || r.paymentMonth || undefined,
+      paymentMonths: pMonths.length > 0 ? pMonths : (r.paymentMonths || undefined),
+      monthBreakdown: mBreakdown.length > 0 ? mBreakdown : (r.monthBreakdown || undefined),
       amount: amt,
       amountInWordsBn: numberToWordsBn(amt),
       amountInWordsEn: numberToWordsEn(amt),
-      paymentMethod: r.payment_method || 'cash',
-      previousDue: r.previous_due !== null && r.previous_due !== undefined ? Number(r.previous_due) : undefined,
-      remainingDue: r.remaining_due !== null && r.remaining_due !== undefined ? Number(r.remaining_due) : undefined,
-      collectorId: r.collector_id || 'USR-001',
-      collectorName: r.collected_by || r.collector_name || 'Admin',
-      notes: r.notes || '',
-      createdAt: r.created_at || new Date().toISOString()
+      paymentMethod: r.payment_method || r.paymentMethod || 'cash',
+      previousDue: r.previous_due !== null && r.previous_due !== undefined ? Number(r.previous_due) : r.previousDue,
+      remainingDue: r.remaining_due !== null && r.remaining_due !== undefined ? Number(r.remaining_due) : r.remainingDue,
+      status: r.status || 'active',
+      collectorId: r.collector_id || r.collectorId || 'USR-001',
+      collectorName: r.collected_by || r.collector_name || r.collectorName || 'Admin',
+      notes: r.notes || r.remarks || '',
+      createdAt: r.created_at || r.createdAt || new Date().toISOString()
     };
   };
 
@@ -604,15 +639,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       .channel('app-realtime-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'receipts' }, async () => {
         const { data: recs } = await supabase.from('receipts').select('*');
-        if (recs && recs.length > 0) setReceipts(recs.map(mapSupabaseReceipt));
+        if (recs) setReceipts(recs.map(mapSupabaseReceipt));
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, async () => {
         const { data: mems } = await supabase.from('members').select('*');
-        if (mems && mems.length > 0) setMembers(mems.map(mapSupabaseMember));
+        if (mems) setMembers(mems.map(mapSupabaseMember));
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, async () => {
         const { data: txs } = await supabase.from('transactions').select('*');
-        if (txs && txs.length > 0) {
+        if (txs) {
           setTransactions(txs.map(t => ({
             id: t.id,
             transactionId: t.transaction_id,
@@ -625,6 +660,59 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             balance: Number(t.balance),
             user: t.user_name || 'System',
             createdAt: t.created_at
+          })));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_dues' }, async () => {
+        const { data: duesData } = await supabase.from('monthly_dues').select('*');
+        if (duesData) {
+          setMonthlyDues(duesData.map(d => ({
+            id: d.id,
+            memberId: String(d.member_id),
+            memberName: d.member_name,
+            mobile: d.mobile,
+            monthYear: d.month_year,
+            expectedAmount: Number(d.expected_amount),
+            paidAmount: Number(d.paid_amount),
+            dueAmount: Number(d.due_amount),
+            status: d.status,
+            lastPaymentDate: d.last_payment_date
+          })));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'incomes' }, async () => {
+        const { data: incomesData } = await supabase.from('incomes').select('*');
+        if (incomesData) {
+          setIncomes(incomesData.map(i => ({
+            id: i.id,
+            incomeId: i.income_id,
+            date: i.date,
+            category: i.category,
+            description: i.description,
+            amount: Number(i.amount),
+            paymentMethod: i.payment_method,
+            refNumber: i.ref_number,
+            addedBy: i.added_by,
+            createdAt: i.created_at
+          })));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, async () => {
+        const { data: expensesData } = await supabase.from('expenses').select('*');
+        if (expensesData) {
+          setExpenses(expensesData.map(e => ({
+            id: e.id,
+            expenseId: e.expense_id,
+            date: e.date,
+            category: e.category,
+            description: e.description,
+            amount: Number(e.amount),
+            paymentMethod: e.payment_method,
+            refNumber: e.ref_number,
+            approvedBy: e.approved_by,
+            addedBy: e.added_by,
+            status: e.status,
+            createdAt: e.created_at
           })));
         }
       })
