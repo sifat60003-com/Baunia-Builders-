@@ -58,6 +58,8 @@ export interface Member {
   currentDeposit: number;
   currentDue: number;
   notes?: string;
+  pin?: string; // 4-digit Security PIN for member portal high security
+  isPinSet?: boolean; // Indicates if member has completed 1st-time NID & PIN setup
   nominees: Nominee[];
   createdAt: string;
   updatedAt: string;

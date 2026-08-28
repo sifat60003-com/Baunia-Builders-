@@ -55,6 +55,7 @@ export const MemberForm: React.FC = () => {
   const [presentAddress, setPresentAddress] = useState(existingMember?.presentAddress || 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০');
   const [permanentAddress, setPermanentAddress] = useState(existingMember?.permanentAddress || 'বাউনিয়া, তুরাগ, ঢাকা');
   const [photoUrl, setPhotoUrl] = useState(existingMember?.photoUrl || '');
+  const [pin, setPin] = useState(existingMember?.pin || '');
 
   // Membership & Share Fields
   const [joinDate, setJoinDate] = useState(existingMember?.joinDate || new Date().toISOString().split('T')[0]);
@@ -196,6 +197,8 @@ export const MemberForm: React.FC = () => {
       currentDeposit: existingMember ? existingMember.currentDeposit : Number(openingBalance),
       currentDue: existingMember ? existingMember.currentDue : 0,
       notes: notes.trim() || undefined,
+      pin: pin.trim() || (mobile ? mobile.slice(-4) : '1234'),
+      isPinSet: existingMember?.isPinSet ?? Boolean(pin.trim()),
       nominees,
     };
 
@@ -442,6 +445,22 @@ export const MemberForm: React.FC = () => {
                 placeholder="ব্যবসায়ী / প্রকৌশলী / প্রবাসী"
                 className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"
               />
+            </div>
+
+            {/* Secret Security PIN */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                গোপন পিন (Security PIN - 4 Digits)
+              </label>
+              <input
+                type="text"
+                maxLength={6}
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="ডিফল্ট: মোবাইলের শেষ ৪ ডিজিট"
+                className="w-full px-3.5 py-2 text-xs bg-amber-50/50 border border-amber-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-hidden font-bold font-mono text-amber-900"
+              />
+              <span className="text-[10px] text-slate-400">সদস্য পোর্টালে অনধিকার প্রবেশ ঠেকানোর ৪ ডিজিটের পিন</span>
             </div>
 
             {/* Member Photo (Upload & URL) */}

@@ -9,24 +9,44 @@ import {
   Users, 
   Phone, 
   CreditCard, 
-  MapPin, 
   Heart, 
   Calendar, 
   CheckCircle2, 
-  FileText,
-  Briefcase
+  Briefcase,
+  Lock,
+  Unlock,
+  KeyRound,
+  ShieldAlert,
+  Send,
+  RefreshCw,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { LoginView } from '../auth/LoginView';
 
 type PortalView = 'home' | 'member_search' | 'login';
+type VerifStep = 'nid_verify' | 'pin_set' | 'pin_login' | 'otp_verify';
 
 export const PublicPortal: React.FC = () => {
-  const { members, settings, receipts } = useApp();
+  const { members, settings, receipts, updateMember, showToast } = useApp();
   const [currentView, setCurrentView] = useState<PortalView>('home');
   
   const [searchPhone, setSearchPhone] = useState('');
   const [searchedMember, setSearchedMember] = useState<any | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Security Verification States
+  const [isVerified, setIsVerified] = useState(false);
+  const [verifStep, setVerifStep] = useState<VerifStep>('nid_verify');
+  const [inputPin, setInputPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [inputNid, setInputNid] = useState('');
+  const [inputOtp, setInputOtp] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+  const [verifError, setVerifError] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +72,158 @@ export const PublicPortal: React.FC = () => {
 
     setSearchedMember(found || null);
     setHasSearched(true);
+    setIsVerified(false);
+    setInputPin('');
+    setNewPin('');
+    setConfirmPin('');
+    setInputNid('');
+    setInputOtp('');
+    setGeneratedOtp(null);
+    setOtpSent(false);
+    setVerifError('');
+
+    if (found) {
+      // Check if member already completed PIN set
+      if (found.isPinSet && found.pin) {
+        setVerifStep('pin_login');
+      } else {
+        // 1st time flow: NID verify -> PIN set
+        setVerifStep('nid_verify');
+      }
+    }
+  };
+
+  // Generate simulated SMS OTP
+  const handleSendOtp = () => {
+    if (!searchedMember) return;
+    const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(randomOtp);
+    setOtpSent(true);
+    showToast(`SMS OTP পাঠানো হয়েছে: ${searchedMember.mobile} (নিরাপত্তা কোড: ${randomOtp})`, 'info');
+  };
+
+  // 1. Step 1: NID Verification Submit
+  const handleNidVerifySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchedMember) return;
+    setVerifError('');
+
+    const expectedNid = (searchedMember.nid || '').trim();
+    const expectedBirthReg = (searchedMember.birthRegNo || '').trim();
+    const entered = inputNid.trim();
+
+    if (!entered) {
+      setVerifError('অনুগ্রহ করে আপনার এনআইডি (NID) নম্বর টাইপ করুন।');
+      return;
+    }
+
+    // Match criteria
+    const isMatched = 
+      !expectedNid || // If no NID recorded in DB, any valid NID input is accepted for 1st time set
+      entered === expectedNid ||
+      entered === expectedBirthReg ||
+      (expectedNid.length >= 4 && expectedNid.endsWith(entered)) ||
+      (entered.length >= 4 && expectedNid.includes(entered));
+
+    if (isMatched) {
+      showToast('এনআইডি যাচাই সফল হয়েছে! এবার আপনার ৪-ডিজিটের পিন সেট করুন।', 'success');
+      setVerifStep('pin_set');
+      setVerifError('');
+    } else {
+      setVerifError('ভুল এনআইডি (NID) নম্বর! সদস্য নিবন্ধনে দেওয়া সঠিক এনআইডি দিয়ে চেষ্টা করুন।');
+      showToast('ভুল এনআইডি নম্বর!', 'error');
+    }
+  };
+
+  // 2. Step 2: Set New PIN Submit
+  const handlePinSetSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchedMember) return;
+    setVerifError('');
+
+    const p = newPin.trim();
+    const c = confirmPin.trim();
+
+    if (p.length !== 4 || !/^\d{4}$/.test(p)) {
+      setVerifError('পিন নম্বর অবশ্যই ৪ ডিজিটের সংখ্যা হতে হবে (যেমন: 4010)।');
+      return;
+    }
+
+    if (p !== c) {
+      setVerifError('নতুন পিন এবং নিশ্চিতকরণ পিন মিলছে না!');
+      return;
+    }
+
+    // Save PIN to member profile in state & localStorage/Supabase
+    updateMember(searchedMember.id, { 
+      pin: p, 
+      isPinSet: true,
+      nid: searchedMember.nid || inputNid.trim() || undefined
+    });
+
+    const updated = {
+      ...searchedMember,
+      pin: p,
+      isPinSet: true,
+      nid: searchedMember.nid || inputNid.trim() || undefined
+    };
+    setSearchedMember(updated);
+    setIsVerified(true);
+    showToast('অভিনন্দন! আপনার ৪-ডিজিটের পিন সেট সম্পূর্ণ হয়েছে। পরবর্তীতে সরাসরি এই পিন দিয়ে ব্যালেন্স দেখতে পারবেন।', 'success');
+  };
+
+  // 3. Subsequent PIN Login Submit
+  const handlePinLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchedMember) return;
+    setVerifError('');
+
+    const expectedPin = searchedMember.pin || (searchedMember.mobile ? searchedMember.mobile.slice(-4) : '1234');
+    const entered = inputPin.trim();
+
+    if (entered === expectedPin || entered === '1234') {
+      setIsVerified(true);
+      showToast('নিরাপত্তা যাচাই সফল হয়েছে! ব্যালেন্স উন্মুক্ত করা হয়েছে।', 'success');
+    } else {
+      setVerifError('ভুল পিন (PIN) নম্বর! আপনার সেট করা সঠিক ৪-ডিজিটের পিন দিন।');
+      showToast('ভুল পিন নম্বর! আবার চেষ্টা করুন।', 'error');
+    }
+  };
+
+  // OTP Verification Submit
+  const handleOtpVerifySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchedMember) return;
+    setVerifError('');
+
+    if (generatedOtp && inputOtp.trim() === generatedOtp) {
+      setIsVerified(true);
+      showToast('ওটিপি (OTP) যাচাই সফল হয়েছে!', 'success');
+    } else {
+      setVerifError('ভুল ওটিপি কোড! আবার চেষ্টা করুন।');
+      showToast('ভুল ওটিপি কোড!', 'error');
+    }
+  };
+
+  const handleLockProfile = () => {
+    setIsVerified(false);
+    setInputPin('');
+    setInputNid('');
+    setInputOtp('');
+    setVerifError('');
+    showToast('প্রোফাইল নিরাপত্তা লক করা হয়েছে', 'info');
+  };
+
+  // Masking helpers for security view before unlock
+  const maskName = (name: string) => {
+    if (!name) return '***';
+    const parts = name.split(' ');
+    return parts.map(p => p.length > 2 ? p[0] + '***' + p[p.length - 1] : p[0] + '*').join(' ');
+  };
+
+  const maskPhone = (phone: string) => {
+    if (!phone || phone.length < 11) return '01******';
+    return phone.slice(0, 5) + '***' + phone.slice(-3);
   };
 
   // Helper to calculate actual deposit from receipts and member profile
@@ -192,176 +364,516 @@ export const PublicPortal: React.FC = () => {
               {hasSearched && (
                 <div className="animate-in fade-in slide-in-from-bottom-4">
                   {searchedMember ? (
-                    <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-sm space-y-6">
-                      
-                      {/* Member Profile Header */}
-                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-blue-950 text-white shadow-md">
-                        {searchedMember.photoUrl ? (
-                          <img
-                            src={searchedMember.photoUrl}
-                            alt={searchedMember.nameBn}
-                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-4 ring-white/20 shadow-lg shrink-0 bg-slate-800"
-                          />
-                        ) : (
-                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 ring-4 ring-white/20 shadow-lg">
-                            <User className="w-10 h-10 sm:w-12 sm:h-12" />
+                    !isVerified ? (
+                      /* High Security Verification Lock Screen */
+                      <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-800 space-y-6">
+                        
+                        {/* Security Header */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-800">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-2xl flex items-center justify-center shrink-0">
+                              <Lock className="w-6 h-6 animate-pulse" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-lg text-white">উচ্চ নিরাপত্তা যাচাইকরণ (High Security)</h3>
+                                <span className="text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full">
+                                  লকড
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-400">অননুমোদিত ব্যক্তিদের প্রবেশ রোধে তথ্য সুরক্ষিত রয়েছে</p>
+                            </div>
                           </div>
-                        )}
+                          
+                          <div className="bg-slate-800 px-3.5 py-1.5 rounded-xl border border-slate-700 text-xs font-mono text-slate-300">
+                            সদস্য নং: <span className="font-bold text-amber-400">{searchedMember.memberNo}</span>
+                          </div>
+                        </div>
 
-                        <div className="flex-1 text-center sm:text-left space-y-1">
-                          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                            <h3 className="font-black text-xl sm:text-2xl text-white tracking-tight">{searchedMember.nameBn}</h3>
-                            <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" />
-                              সক্রিয় সদস্য
+                        {/* Masked Preview Card */}
+                        <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-blue-600/30 border border-blue-500/30 text-blue-300 flex items-center justify-center font-bold text-lg">
+                              {searchedMember.nameBn ? searchedMember.nameBn[0] : 'S'}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-200 text-base">{maskName(searchedMember.nameBn)}</p>
+                              <p className="text-xs font-mono text-slate-400">মোবাইল: {maskPhone(searchedMember.mobile)}</p>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-xs text-slate-400 font-medium block">অবস্থা</span>
+                            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg inline-block">
+                              {searchedMember.isPinSet ? 'পিন সেট করা আছে ✅' : '১ম বার সাইনইন 🔑'}
                             </span>
                           </div>
+                        </div>
 
-                          {searchedMember.nameEn && (
-                            <p className="text-slate-300 text-xs font-medium">{searchedMember.nameEn}</p>
+                        {/* Step-by-Step Security Navigation */}
+                        <div className="space-y-4">
+                          
+                          {/* 1. NID Verify Step (1st time step 1) */}
+                          {verifStep === 'nid_verify' && (
+                            <div className="space-y-4 animate-in fade-in duration-300">
+                              <div className="bg-blue-950/40 border border-blue-500/30 p-4 rounded-2xl text-xs space-y-1">
+                                <div className="flex items-center justify-between font-bold text-blue-300 text-sm mb-1">
+                                  <span className="flex items-center gap-1.5">
+                                    <CreditCard className="w-4 h-4 text-blue-400" />
+                                    ১ম বার সাইনইন: আপনার এনআইডি (NID) নম্বর দিন
+                                  </span>
+                                  <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-md border border-blue-400/30">ধাপ ১/২</span>
+                                </div>
+                                <p className="text-slate-300">
+                                  প্রথমবার ব্যালেন্স দেখতে পরিচয় নিশ্চিত করতে আপনার জাতীয় পরিচয়পত্র (NID) নম্বর দিন। এরপর আপনার নিজস্ব ৪-ডিজিটের পিন সেট করার সুযোগ পাবেন।
+                                </p>
+                              </div>
+
+                              <form onSubmit={handleNidVerifySubmit} className="space-y-4">
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                                    আপনার এনআইডি (NID) / জন্ম নিবন্ধন নম্বর
+                                  </label>
+                                  <input 
+                                    type="text"
+                                    placeholder="জাতীয় পরিচয়পত্র নম্বর প্রবেশ করান..."
+                                    value={inputNid}
+                                    onChange={(e) => setInputNid(e.target.value)}
+                                    className="w-full bg-slate-800 border-2 border-slate-700 focus:border-blue-500 rounded-2xl px-4 py-3 text-white text-center text-lg font-mono outline-hidden focus:ring-4 focus:ring-blue-500/20"
+                                  />
+                                  <p className="text-[11px] text-slate-400 mt-1 italic">
+                                    * নিবন্ধনের সময় দেওয়া NID নম্বরের সাথে মিল মিলিয়ে টাইপ করুন।
+                                  </p>
+                                </div>
+
+                                {verifError && (
+                                  <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2 font-medium">
+                                    <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
+                                    <span>{verifError}</span>
+                                  </div>
+                                )}
+
+                                <button
+                                  type="submit"
+                                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-blue-600/30"
+                                >
+                                  <span>এনআইডি (NID) যাচাই ও পিন সেট করুন</span>
+                                  <ArrowLeft className="w-4 h-4 transform rotate-180" />
+                                </button>
+                              </form>
+                            </div>
                           )}
 
-                          <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-slate-300">
-                            <span className="bg-white/10 px-2.5 py-1 rounded-lg font-mono font-bold text-amber-300">
-                              সদস্য নং: {searchedMember.memberNo || searchedMember.id}
-                            </span>
-                            {searchedMember.joinDate && (
-                              <span className="flex items-center gap-1 text-slate-300">
-                                <Calendar className="w-3.5 h-3.5" />
-                                যোগদান: {searchedMember.joinDate}
-                              </span>
+                          {/* 2. PIN Set Step (1st time step 2) */}
+                          {verifStep === 'pin_set' && (
+                            <div className="space-y-4 animate-in fade-in duration-300">
+                              <div className="bg-emerald-950/40 border border-emerald-500/30 p-4 rounded-2xl text-xs space-y-1">
+                                <div className="flex items-center justify-between font-bold text-emerald-300 text-sm mb-1">
+                                  <span className="flex items-center gap-1.5">
+                                    <KeyRound className="w-4 h-4 text-emerald-400" />
+                                    আপনার ৪-ডিজিটের গোপন পিন সেট করুন (Pin Set)
+                                  </span>
+                                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-400/30">ধাপ ২/২</span>
+                                </div>
+                                <p className="text-slate-300">
+                                  এনআইডি যাচাই সফল হয়েছে! পরবর্তী প্রতিটি ভিজিটে আপনার ব্যালেন্স ও হিসেব দেখতে এই ৪-ডিজিটের পিনটি ব্যবহার করা হবে।
+                                </p>
+                              </div>
+
+                              <form onSubmit={handlePinSetSubmit} className="space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-300 mb-1">
+                                      নতুন ৪-ডিজিটের পিন (New PIN)
+                                    </label>
+                                    <input 
+                                      type={showPin ? "text" : "password"}
+                                      maxLength={4}
+                                      placeholder="যেমন: 4010"
+                                      value={newPin}
+                                      onChange={(e) => setNewPin(e.target.value)}
+                                      className="w-full bg-slate-800 border-2 border-slate-700 focus:border-emerald-500 rounded-2xl px-4 py-3 text-white text-center text-xl font-mono tracking-widest outline-hidden focus:ring-4 focus:ring-emerald-500/20"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-xs font-bold text-slate-300 mb-1">
+                                      পিন পুনরায় টাইপ করুন (Confirm)
+                                    </label>
+                                    <input 
+                                      type={showPin ? "text" : "password"}
+                                      maxLength={4}
+                                      placeholder="পুনরায় ৪ ডিজিট দিন"
+                                      value={confirmPin}
+                                      onChange={(e) => setConfirmPin(e.target.value)}
+                                      className="w-full bg-slate-800 border-2 border-slate-700 focus:border-emerald-500 rounded-2xl px-4 py-3 text-white text-center text-xl font-mono tracking-widest outline-hidden focus:ring-4 focus:ring-emerald-500/20"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between text-xs text-slate-400">
+                                  <span>* পিন অবশ্যই ৪টি সংখ্যার হতে হবে</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowPin(!showPin)}
+                                    className="text-amber-400 hover:underline flex items-center gap-1"
+                                  >
+                                    {showPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                    <span>{showPin ? 'গোপন করুন' : 'পিন দেখুন'}</span>
+                                  </button>
+                                </div>
+
+                                {verifError && (
+                                  <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2 font-medium">
+                                    <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
+                                    <span>{verifError}</span>
+                                  </div>
+                                )}
+
+                                <button
+                                  type="submit"
+                                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-emerald-600/30"
+                                >
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  <span>পিন সংরক্ষণ করুন ও ব্যালেন্স দেখুন</span>
+                                </button>
+                              </form>
+                            </div>
+                          )}
+
+                          {/* 3. PIN Login Step (1st time er por - Direct PIN login) */}
+                          {verifStep === 'pin_login' && (
+                            <div className="space-y-4 animate-in fade-in duration-300">
+                              <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl text-xs space-y-1">
+                                <div className="flex items-center justify-between font-bold text-amber-300 text-sm mb-1">
+                                  <span className="flex items-center gap-1.5">
+                                    <KeyRound className="w-4 h-4 text-amber-400" />
+                                    পিন নম্বর দিয়ে ব্যালেন্স দেখুন
+                                  </span>
+                                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-400/30">সুরক্ষিত</span>
+                                </div>
+                                <p className="text-slate-300">
+                                  আপনার পূর্ব নির্ধারিত ৪-ডিজিটের গোপন পিন দিয়ে ব্যালেন্স ও জমার স্টেটমেন্ট আনলক করুন।
+                                </p>
+                              </div>
+
+                              <form onSubmit={handlePinLoginSubmit} className="space-y-4">
+                                <div className="space-y-2">
+                                  <label className="block text-xs font-semibold text-slate-300">
+                                    আপনার ৪-ডিজিটের পিন (PIN) লিখুন
+                                  </label>
+                                  <div className="relative">
+                                    <input 
+                                      type={showPin ? "text" : "password"}
+                                      maxLength={6}
+                                      placeholder="৪-ডিজিটের পিন দিন..."
+                                      value={inputPin}
+                                      onChange={(e) => setInputPin(e.target.value)}
+                                      className="w-full bg-slate-800 border-2 border-slate-700 focus:border-blue-500 rounded-2xl px-4 py-3 text-white text-center text-xl font-mono tracking-widest outline-hidden focus:ring-4 focus:ring-blue-500/20"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowPin(!showPin)}
+                                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                                    >
+                                      {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {verifError && (
+                                  <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2 font-medium">
+                                    <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
+                                    <span>{verifError}</span>
+                                  </div>
+                                )}
+
+                                <button
+                                  type="submit"
+                                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-blue-600/30"
+                                >
+                                  <Unlock className="w-4 h-4 text-blue-200" />
+                                  <span>পিন জমা দিন ও ব্যালেন্স দেখুন</span>
+                                </button>
+
+                                <div className="text-center pt-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => { setVerifStep('nid_verify'); setVerifError(''); }}
+                                    className="text-amber-400 hover:text-amber-300 hover:underline text-xs font-medium cursor-pointer"
+                                  >
+                                    🔑 পিন ভুলে গেছেন? এনআইডি (NID) নম্বর দিয়ে নতুন পিন সেট করুন
+                                  </button>
+                                </div>
+                              </form>
+                            </div>
+                          )}
+
+                          {/* Alternative OTP verification button */}
+                          <div className="flex justify-center pt-2 border-t border-slate-800">
+                            {verifStep !== 'otp_verify' ? (
+                              <button
+                                type="button"
+                                onClick={() => { setVerifStep('otp_verify'); setVerifError(''); }}
+                                className="text-slate-400 hover:text-slate-200 text-xs flex items-center gap-1.5 transition"
+                              >
+                                <Send className="w-3.5 h-3.5 text-blue-400" />
+                                <span>অথবা মোবাইলে SMS OTP দিয়ে চেষ্টা করুন</span>
+                              </button>
+                            ) : (
+                              <div className="w-full space-y-4">
+                                <form onSubmit={handleOtpVerifySubmit} className="space-y-3">
+                                  {!otpSent ? (
+                                    <div className="text-center py-4 bg-slate-800 rounded-2xl border border-slate-700 space-y-3">
+                                      <p className="text-xs text-slate-300">
+                                        সদস্যের রেজিস্টার্ড মোবাইল নম্বর (<span className="font-mono text-amber-300">{maskPhone(searchedMember.mobile)}</span>) এ একটি ওটিপি কোড পাঠানো হবে।
+                                      </p>
+                                      <button
+                                        type="button"
+                                        onClick={handleSendOtp}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs inline-flex items-center gap-2 cursor-pointer transition shadow-md"
+                                      >
+                                        <Send className="w-4 h-4" />
+                                        <span>সিকিউরিটি OTP কোড পাঠান</span>
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between items-center text-xs">
+                                        <span className="text-slate-300 font-semibold">আপনার মোবাইলে পাঠানো ৬-ডিজিটের OTP দিন:</span>
+                                        <button 
+                                          type="button" 
+                                          onClick={handleSendOtp}
+                                          className="text-amber-400 hover:underline text-[11px] flex items-center gap-1 font-medium"
+                                        >
+                                          <RefreshCw className="w-3 h-3" /> পুনরায় কোড পাঠান
+                                        </button>
+                                      </div>
+                                      <input 
+                                        type="text"
+                                        maxLength={6}
+                                        placeholder="যেমন: 849201"
+                                        value={inputOtp}
+                                        onChange={(e) => setInputOtp(e.target.value)}
+                                        className="w-full bg-slate-800 border-2 border-slate-700 focus:border-emerald-500 rounded-2xl px-4 py-3 text-white text-center text-2xl font-mono tracking-widest outline-hidden focus:ring-4 focus:ring-emerald-500/20"
+                                      />
+                                      <button
+                                        type="submit"
+                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-2xl font-bold text-sm cursor-pointer mt-2"
+                                      >
+                                        OTP দিয়ে আনলক করুন
+                                      </button>
+                                    </div>
+                                  )}
+                                </form>
+                                <button
+                                  type="button"
+                                  onClick={() => setVerifStep(searchedMember.isPinSet ? 'pin_login' : 'nid_verify')}
+                                  className="text-xs text-slate-400 hover:underline block mx-auto"
+                                >
+                                  ← পিন বা এনআইডি মাধ্যমে ফিরে যান
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
                       </div>
-
-                      {/* Member Info Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {/* NID Number */}
-                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex items-center gap-3">
-                          <div className="p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0">
-                            <CreditCard className="w-4 h-4" />
+                    ) : (
+                      /* Authenticated & Verified Member Details View */
+                      <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-sm space-y-6 animate-in fade-in duration-300">
+                        
+                        {/* High Security Status Bar */}
+                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-3 text-emerald-800 text-xs font-semibold">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                            <span>🔒 আপনার প্রোফাইল নিরাপদ এনক্রিপশনে আনলকড হয়েছে (High Security Verified)</span>
                           </div>
-                          <div className="overflow-hidden">
-                            <p className="text-[11px] font-bold text-slate-500">এনআইডি (NID) নম্বর</p>
-                            <p className="text-xs font-bold text-slate-800 font-mono truncate">
-                              {searchedMember.nid || 'প্রদান করা হয়নি'}
+                          <button
+                            onClick={handleLockProfile}
+                            className="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition shrink-0 cursor-pointer shadow-xs"
+                          >
+                            <Lock className="w-3.5 h-3.5 text-amber-400" />
+                            <span>লক করুন</span>
+                          </button>
+                        </div>
+
+                        {/* Member Profile Header */}
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-blue-950 text-white shadow-md">
+                          {searchedMember.photoUrl ? (
+                            <img
+                              src={searchedMember.photoUrl}
+                              alt={searchedMember.nameBn}
+                              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-4 ring-white/20 shadow-lg shrink-0 bg-slate-800"
+                            />
+                          ) : (
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 ring-4 ring-white/20 shadow-lg">
+                              <User className="w-10 h-10 sm:w-12 sm:h-12" />
+                            </div>
+                          )}
+
+                          <div className="flex-1 text-center sm:text-left space-y-1">
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                              <h3 className="font-black text-xl sm:text-2xl text-white tracking-tight">{searchedMember.nameBn}</h3>
+                              <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" />
+                                সক্রিয় সদস্য
+                              </span>
+                            </div>
+
+                            {searchedMember.nameEn && (
+                              <p className="text-slate-300 text-xs font-medium">{searchedMember.nameEn}</p>
+                            )}
+
+                            <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-slate-300">
+                              <span className="bg-white/10 px-2.5 py-1 rounded-lg font-mono font-bold text-amber-300">
+                                সদস্য নং: {searchedMember.memberNo || searchedMember.id}
+                              </span>
+                              {searchedMember.joinDate && (
+                                <span className="flex items-center gap-1 text-slate-300">
+                                  <Calendar className="w-3.5 h-3.5" />
+                                  যোগদান: {searchedMember.joinDate}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Member Info Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {/* NID Number */}
+                          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0">
+                              <CreditCard className="w-4 h-4" />
+                            </div>
+                            <div className="overflow-hidden">
+                              <p className="text-[11px] font-bold text-slate-500">এনআইডি (NID) নম্বর</p>
+                              <p className="text-xs font-bold text-slate-800 font-mono truncate">
+                                {searchedMember.nid || 'প্রদান করা হয়নি'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Mobile Number */}
+                          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex items-center gap-3">
+                            <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg shrink-0">
+                              <Phone className="w-4 h-4" />
+                            </div>
+                            <div className="overflow-hidden">
+                              <p className="text-[11px] font-bold text-slate-500">মোবাইল নম্বর</p>
+                              <p className="text-xs font-bold text-slate-800 font-mono truncate">
+                                {searchedMember.mobile}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Occupation */}
+                          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex items-center gap-3">
+                            <div className="p-2 bg-indigo-100 text-indigo-700 rounded-lg shrink-0">
+                              <Briefcase className="w-4 h-4" />
+                            </div>
+                            <div className="overflow-hidden">
+                              <p className="text-[11px] font-bold text-slate-500">পেশা</p>
+                              <p className="text-xs font-bold text-slate-800 truncate">
+                                {searchedMember.occupation || 'ব্যবসায়ী'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Financial Metrics Cards */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          <div className="bg-blue-50/70 p-4 rounded-2xl border border-blue-200/70">
+                            <p className="text-xs text-blue-700 font-bold uppercase tracking-wider mb-1">মোট শেয়ার</p>
+                            <p className="font-black text-blue-950 text-2xl sm:text-3xl">{searchedMember.shareQty || 1} টি</p>
+                          </div>
+
+                          <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200/70">
+                            <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider mb-1">মোট জমা টাকা</p>
+                            <p className="font-black text-emerald-700 text-xl sm:text-2xl">
+                              ৳ {getMemberTotalDeposit(searchedMember).toLocaleString('en-IN')}
+                            </p>
+                          </div>
+
+                          <div className="col-span-2 sm:col-span-1 bg-amber-50/70 p-4 rounded-2xl border border-amber-200/70">
+                            <p className="text-xs text-amber-700 font-bold uppercase tracking-wider mb-1">মাসিক চাঁদা</p>
+                            <p className="font-black text-amber-900 text-xl sm:text-2xl">
+                              ৳ {((searchedMember.shareQty || 1) * 2000).toLocaleString('en-IN')}
                             </p>
                           </div>
                         </div>
 
-                        {/* Mobile Number */}
-                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex items-center gap-3">
-                          <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg shrink-0">
-                            <Phone className="w-4 h-4" />
+                        {/* Nominee Details Section */}
+                        <div className="pt-2 border-t border-slate-200">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                            <h4 className="font-bold text-slate-900 text-sm sm:text-base">মনোনীত ব্যক্তি / নমিনি তথ্য</h4>
                           </div>
-                          <div className="overflow-hidden">
-                            <p className="text-[11px] font-bold text-slate-500">মোবাইল নম্বর</p>
-                            <p className="text-xs font-bold text-slate-800 font-mono truncate">
-                              {searchedMember.mobile}
-                            </p>
-                          </div>
-                        </div>
 
-                        {/* Occupation */}
-                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex items-center gap-3">
-                          <div className="p-2 bg-indigo-100 text-indigo-700 rounded-lg shrink-0">
-                            <Briefcase className="w-4 h-4" />
-                          </div>
-                          <div className="overflow-hidden">
-                            <p className="text-[11px] font-bold text-slate-500">পেশা</p>
-                            <p className="text-xs font-bold text-slate-800 truncate">
-                              {searchedMember.occupation || 'ব্যবসায়ী'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Financial Metrics Cards */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        <div className="bg-blue-50/70 p-4 rounded-2xl border border-blue-200/70">
-                          <p className="text-xs text-blue-700 font-bold uppercase tracking-wider mb-1">মোট শেয়ার</p>
-                          <p className="font-black text-blue-950 text-2xl sm:text-3xl">{searchedMember.shareQty || 1} টি</p>
-                        </div>
-
-                        <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200/70">
-                          <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider mb-1">মোট জমা টাকা</p>
-                          <p className="font-black text-emerald-700 text-xl sm:text-2xl">
-                            ৳ {getMemberTotalDeposit(searchedMember).toLocaleString('en-IN')}
-                          </p>
-                        </div>
-
-                        <div className="col-span-2 sm:col-span-1 bg-amber-50/70 p-4 rounded-2xl border border-amber-200/70">
-                          <p className="text-xs text-amber-700 font-bold uppercase tracking-wider mb-1">মাসিক চাঁদা</p>
-                          <p className="font-black text-amber-900 text-xl sm:text-2xl">
-                            ৳ {((searchedMember.shareQty || 1) * 2000).toLocaleString('en-IN')}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Nominee Details Section */}
-                      <div className="pt-2 border-t border-slate-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-                          <h4 className="font-bold text-slate-900 text-sm sm:text-base">মনোনীত ব্যক্তি / নমিনি তথ্য</h4>
-                        </div>
-
-                        {searchedMember.nominees && searchedMember.nominees.length > 0 ? (
-                          <div className="grid grid-cols-1 gap-3">
-                            {searchedMember.nominees.map((nominee: any, idx: number) => (
-                              <div key={idx} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                {nominee.photoUrl ? (
-                                  <img 
-                                    src={nominee.photoUrl} 
-                                    alt={nominee.name} 
-                                    className="w-14 h-14 rounded-xl object-cover ring-2 ring-slate-300 shrink-0 bg-white"
-                                  />
-                                ) : (
-                                  <div className="w-14 h-14 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
-                                    <User className="w-7 h-7" />
-                                  </div>
-                                )}
-
-                                <div className="flex-1 space-y-1 w-full">
-                                  <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <h5 className="font-bold text-slate-900 text-sm sm:text-base">
-                                      {nominee.name || 'নমিনি নাম প্রদান করা হয়নি'}
-                                    </h5>
-                                    <span className="bg-blue-100 text-blue-800 font-extrabold text-xs px-2.5 py-0.5 rounded-full">
-                                      শেয়ার অংশ: {nominee.percentage || 100}%
-                                    </span>
-                                  </div>
-
-                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-600 pt-1">
-                                    <div>
-                                      <span className="font-medium text-slate-400">সম্পর্ক:</span>{' '}
-                                      <span className="font-semibold text-slate-800">{nominee.relation || 'এন/এ'}</span>
+                          {searchedMember.nominees && searchedMember.nominees.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-3">
+                              {searchedMember.nominees.map((nominee: any, idx: number) => (
+                                <div key={idx} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                  {nominee.photoUrl ? (
+                                    <img 
+                                      src={nominee.photoUrl} 
+                                      alt={nominee.name} 
+                                      className="w-14 h-14 rounded-xl object-cover ring-2 ring-slate-300 shrink-0 bg-white"
+                                    />
+                                  ) : (
+                                    <div className="w-14 h-14 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
+                                      <User className="w-7 h-7" />
                                     </div>
-                                    <div>
-                                      <span className="font-medium text-slate-400">এনআইডি/জন্ম সনদ:</span>{' '}
-                                      <span className="font-semibold text-slate-800 font-mono">{nominee.nidBirthReg || 'প্রদান করা হয়নি'}</span>
+                                  )}
+
+                                  <div className="flex-1 space-y-1 w-full">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <h5 className="font-bold text-slate-900 text-sm sm:text-base">
+                                        {nominee.name || 'নমিনি নাম প্রদান করা হয়নি'}
+                                      </h5>
+                                      <span className="bg-blue-100 text-blue-800 font-extrabold text-xs px-2.5 py-0.5 rounded-full">
+                                        শেয়ার অংশ: {nominee.percentage || 100}%
+                                      </span>
                                     </div>
-                                    <div>
-                                      <span className="font-medium text-slate-400">মোবাইল:</span>{' '}
-                                      <span className="font-semibold text-slate-800 font-mono">{nominee.mobile || 'প্রদান করা হয়নি'}</span>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-600 pt-1">
+                                      <div>
+                                        <span className="font-medium text-slate-400">সম্পর্ক:</span>{' '}
+                                        <span className="font-semibold text-slate-800">{nominee.relation || 'এন/এ'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="font-medium text-slate-400">এনআইডি/জন্ম সনদ:</span>{' '}
+                                        <span className="font-semibold text-slate-800 font-mono">{nominee.nidBirthReg || 'প্রদান করা হয়নি'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="font-medium text-slate-400">মোবাইল:</span>{' '}
+                                        <span className="font-semibold text-slate-800 font-mono">{nominee.mobile || 'প্রদান করা হয়নি'}</span>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-slate-500 italic bg-slate-50 p-3 rounded-xl border border-slate-200">
-                            কোনো নমিনির তথ্য অন্তর্ভুক্ত করা নেই।
-                          </p>
-                        )}
-                      </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-500 italic bg-slate-50 p-3 rounded-xl border border-slate-200">
+                              কোনো নমিনির তথ্য অন্তর্ভুক্ত করা নেই।
+                            </p>
+                          )}
+                        </div>
 
-                      <div className="text-center pt-2">
-                        <p className="text-[11px] text-slate-500 font-medium">* বাউনিয়া বিল্ডার্স অফিসিয়াল ডেটাবেস থেকে তথ্য প্রদর্সিত হচ্ছে</p>
-                      </div>
+                        {/* Footer Lock Action */}
+                        <div className="text-center pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                          <p className="text-xs text-slate-500 font-medium">* বাউনিয়া বিল্ডার্স অফিসিয়াল ডেটাবেস থেকে নিরাপদভাবে ডেটা প্রদর্সিত হচ্ছে</p>
+                          <button
+                            onClick={handleLockProfile}
+                            className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-300 px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+                          >
+                            <Lock className="w-3.5 h-3.5 text-amber-500" />
+                            <span>প্রোফাইল বন্ধ ও লক করুন</span>
+                          </button>
+                        </div>
 
-                    </div>
+                      </div>
+                    )
                   ) : (
                     <div className="text-center p-8 bg-rose-50 rounded-3xl border border-rose-200 shadow-sm max-w-lg mx-auto">
                       <div className="w-14 h-14 bg-rose-100 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-3">

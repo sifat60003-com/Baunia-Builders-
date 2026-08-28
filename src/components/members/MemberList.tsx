@@ -300,7 +300,17 @@ export const MemberList: React.FC = () => {
 
                     {/* Member ID */}
                     <td className="py-3 px-3 font-mono font-bold text-blue-700 whitespace-nowrap">
-                      {member.id}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMemberId(member.id);
+                          setActiveTab('member_detail');
+                        }}
+                        className="hover:underline hover:text-blue-900 cursor-pointer text-left"
+                        title="সদস্যের প্রোফাইল দেখুন"
+                      >
+                        {member.id}
+                      </button>
                     </td>
 
                     {/* Member Name */}
@@ -308,11 +318,13 @@ export const MemberList: React.FC = () => {
                       <div 
                         onClick={() => {
                           setSelectedMemberId(member.id);
-                          setActiveTab('member_detail');
+                          setActiveTab('member_form');
                         }}
-                        className="font-bold text-slate-900 group-hover:text-blue-700 cursor-pointer text-sm"
+                        className="font-bold text-slate-900 group-hover:text-blue-700 cursor-pointer text-sm flex items-center gap-1.5"
+                        title="সদস্য তথ্য সংশোধন ও ছবি আপলোড করতে ক্লিক করুন (Edit Form)"
                       >
-                        {member.nameBn}
+                        <span>{member.nameBn}</span>
+                        <Edit className="w-3.5 h-3.5 text-blue-500 opacity-60 group-hover:opacity-100 transition shrink-0" />
                       </div>
                       {member.nameEn && member.nameEn !== `Member ${member.memberNo}` && (
                         <div className="text-[11px] text-slate-400">
