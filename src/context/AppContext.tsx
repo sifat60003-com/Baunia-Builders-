@@ -384,16 +384,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const mapSupabaseMember = (m: any): Member => {
     const shareQty = m.share_qty || 1;
     const calculatedDue = shareQty * 25000;
-    const rawMatch = rawMembersList.find(r => r.no === m.member_no);
-    const nominees = rawMatch ? [{
-      id: `NOM-${m.id}-1`,
-      name: rawMatch.nomineeName,
-      relation: 'নমিনী',
-      nidBirthReg: rawMatch.nomineeNid,
-      mobile: m.mobile,
-      address: 'বাউনিয়া, তুরাগ, ঢাকা',
-      percentage: 100
-    }] : [];
+    
+    const nominees = m.nominees ? m.nominees.map((n: any) => ({
+      id: n.id,
+      name: n.name,
+      relation: n.relation || 'নমিনী',
+      nidBirthReg: n.nid_birth_reg,
+      mobile: n.mobile,
+      address: n.address || '',
+      percentage: Number(n.percentage) || 0
+    })) : [];
 
     return {
       id: m.id,
@@ -415,9 +415,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       openingBalance: Number(m.opening_balance || 0),
       createdAt: m.created_at || '2026-01-01',
       updatedAt: m.updated_at || new Date().toISOString(),
-      gender: 'male',
-      dob: m.dob || '1990-01-01',
-      nid: m.nid || (rawMatch ? rawMatch.nid : ''),
+      gender: m.gender || 'male',
+      dob: m.birth_date || m.dob || '1990-01-01',
+      nid: m.nid || '',
       photoUrl: m.photo_url || m.photoUrl,
       photoBackUrl: m.photo_back_url || m.photoBackUrl,
       pin: m.pin || undefined,
@@ -425,13 +425,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       monthlyFee: 2000,
       currentDeposit: Number(m.opening_balance || 0),
       currentDue: m.current_due !== undefined && m.current_due !== null ? Number(m.current_due) : calculatedDue,
-      nominees: nominees
+      nominees: nominees,
     };
   };
 
   const refreshMembers = async () => {
     if (isSupabaseConfigured()) {
-      const { data: membersData, error: mErr } = await supabase.from('members').select('*');
+      const { data: membersData, error: mErr } = await supabase.from('members').select('*, nominees(*)');
       if (membersData) {
         setMembers(membersData.map(mapSupabaseMember));
       } else if (mErr) {
@@ -531,7 +531,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         // 3. Members
-        const { data: membersData, error: mErr } = await supabase.from('members').select('*');
+        const { data: membersData, error: mErr } = await supabase.from('members').select('*, nominees(*)');
         if (membersData && membersData.length > 0) {
           setMembers(membersData.map(mapSupabaseMember));
         } else if (mErr) {
@@ -1005,8 +1005,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (memberData.dob !== undefined) supabasePayload.birth_date = memberData.dob;
       if (memberData.gender !== undefined) supabasePayload.gender = memberData.gender;
       if (memberData.birthRegNo !== undefined) supabasePayload.birth_reg_no = memberData.birthRegNo;
-      if (memberData.nomineeAddress !== undefined) supabasePayload.nominee_address = memberData.nomineeAddress;
-      if (memberData.nomineePhone !== undefined) supabasePayload.nominee_phone = memberData.nomineePhone;
       supabasePayload.updated_at = new Date().toISOString();
 
       supabase.from('members').update(supabasePayload).eq('id', id).then(({ error }) => {
@@ -1600,8 +1598,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           occupation: m.occupation || '',
           present_address: m.presentAddress || '',
           permanent_address: m.permanentAddress || '',
-          nominee_address: m.nomineeAddress || '',
-          nominee_phone: m.nomineePhone || '',
           join_date: m.joinDate || new Date().toISOString().split('T')[0],
           status: m.status || 'active',
           share_qty: m.shareQty || 1,

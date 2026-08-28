@@ -47,8 +47,6 @@ export interface Member {
   occupation: string;
   presentAddress: string;
   permanentAddress: string;
-  nomineeAddress?: string;
-  nomineePhone?: string;
   photoUrl?: string;
   photoBackUrl?: string;
   joinDate: string;
