@@ -776,8 +776,14 @@ CREATE TABLE IF NOT EXISTS users (
   phone TEXT,
   role TEXT,
   status TEXT,
+  avatar TEXT,
+  last_login TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Ensure avatar column exists on existing installations
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP WITH TIME ZONE;
 
 CREATE TABLE IF NOT EXISTS transactions (
   id TEXT PRIMARY KEY,

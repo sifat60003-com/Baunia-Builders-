@@ -21,6 +21,7 @@ import { DueManagement } from './components/dues/DueManagement';
 import { IncomeManagement } from './components/finance/IncomeManagement';
 import { ExpenseManagement } from './components/finance/ExpenseManagement';
 import { CashBook } from './components/finance/CashBook';
+import { FdrManagement } from './components/finance/FdrManagement';
 import { ReportsView } from './components/reports/ReportsView';
 import { UserManagement } from './components/users/UserManagement';
 import { SettingsView } from './components/settings/SettingsView';
@@ -64,6 +65,8 @@ const MainContent: React.FC = () => {
         return <ExpenseManagement />;
       case 'cashbook':
         return <CashBook />;
+      case 'fdr':
+        return <FdrManagement />;
       case 'reports':
         return <ReportsView />;
       case 'users':

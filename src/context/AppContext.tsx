@@ -14,7 +14,8 @@ import {
   Language, 
   UserRole,
   PaymentType,
-  PaymentMethod
+  PaymentMethod,
+  FdrItem
 } from '../types';
 import { 
   initialSettings, 
@@ -146,6 +147,10 @@ interface AppContextType {
   deleteExpense: (id: string) => void;
   approveExpense: (id: string) => void;
 
+  fdrs: FdrItem[];
+  addFdr: (fdr: Omit<FdrItem, 'id' | 'fdrNo' | 'createdAt'>) => void;
+  deleteFdr: (id: string) => void;
+
   transactions: FinancialTransaction[];
   monthlyDues: MonthlyDue[];
   payDue: (dueId: string, amount: number, method: PaymentMethod) => void;
@@ -177,6 +182,7 @@ interface AppContextType {
     totalDue: number;
     totalIncome: number;
     totalExpenses: number;
+    totalFdr: number;
     currentBalance: number;
   };
 
@@ -306,6 +312,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       receipts: initialReceipts,
       incomes: initialIncomes,
       expenses: initialExpenses,
+      fdrs: [],
       transactions: initialTransactions,
       monthlyDues: initialMonthlyDues,
       notifications: initialNotifications,
@@ -343,6 +350,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [receipts, setReceipts] = useState<PaymentReceipt[]>(initialData.receipts);
   const [incomes, setIncomes] = useState<Income[]>(initialData.incomes);
   const [expenses, setExpenses] = useState<Expense[]>(initialData.expenses);
+  const [fdrs, setFdrs] = useState<FdrItem[]>(initialData.fdrs || []);
   const [transactions, setTransactions] = useState<FinancialTransaction[]>(initialData.transactions);
   const [monthlyDues, setMonthlyDues] = useState<MonthlyDue[]>(initialData.monthlyDues);
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialData.notifications);
@@ -779,6 +787,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         receipts,
         incomes,
         expenses,
+        fdrs,
         transactions,
         monthlyDues,
         notifications,
@@ -788,7 +797,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (e) {
       console.error('Failed to sync to local storage:', e);
     }
-  }, [settings, users, members, shares, receipts, incomes, expenses, transactions, monthlyDues, notifications, auditLogs]);
+  }, [settings, users, members, shares, receipts, incomes, expenses, fdrs, transactions, monthlyDues, notifications, auditLogs]);
 
   // Keyboard shortcut Ctrl+K for search
   useEffect(() => {
@@ -1419,6 +1428,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast(t('successDeleted'), 'info');
   };
 
+  const addFdr = (fdrData: Omit<FdrItem, 'id' | 'fdrNo' | 'createdAt'>) => {
+    const id = `FDR-${Date.now()}`;
+    const fdrNo = `FDR-2026-${String(fdrs.length + 1).padStart(4, '0')}`;
+    const now = new Date().toISOString();
+    const newFdr: FdrItem = {
+      ...fdrData,
+      id,
+      fdrNo,
+      addedBy: currentUser.name,
+      createdAt: now,
+    };
+    setFdrs(prev => [newFdr, ...prev]);
+    addAuditLog('FDR_ADD', `FDR তৈরি: ${fdrNo}, পরিমাণ: ৳ ${fdrData.amount}`);
+    showToast(language === 'bn' ? 'FDR সফলভাবে তৈরি করা হয়েছে' : 'FDR created successfully', 'success');
+  };
+
+  const deleteFdr = (id: string) => {
+    const target = fdrs.find(f => f.id === id);
+    setFdrs(prev => prev.filter(f => f.id !== id));
+    if (target) {
+      addAuditLog('FDR_DELETE', `FDR মুছে ফেলা হয়েছে: ${target.fdrNo}`);
+    }
+    showToast(language === 'bn' ? 'FDR মুছে ফেলা হয়েছে' : 'FDR deleted', 'info');
+  };
+
   const approveExpense = (id: string) => {
     setExpenses(prev =>
       prev.map(exp => {
@@ -1872,9 +1906,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const totalDue = membersWithDynamicDues.reduce((sum, m) => sum + (m.currentDue || 0), 0);
     const totalIncome = incomes.reduce((sum, i) => sum + (i.amount || 0), 0);
     const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const totalFdr = fdrs.filter(f => f.status === 'active').reduce((sum, f) => sum + (f.amount || 0), 0);
 
-    // Current Cash Balance: Total Collections + Total Income - Total Expenses
-    const currentBalance = totalCollection + totalIncome - totalExpenses;
+    // Current Cash Balance: Total Collections + Total Income - Total Expenses - Total FDR
+    const currentBalance = totalCollection + totalIncome - totalExpenses - totalFdr;
 
     return {
       totalMembers,
@@ -1888,9 +1923,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       totalDue,
       totalIncome,
       totalExpenses,
+      totalFdr,
       currentBalance,
     };
-  }, [membersWithDynamicDues, receipts, incomes, expenses]);
+  }, [membersWithDynamicDues, receipts, incomes, expenses, fdrs]);
 
   return (
     <AppContext.Provider
@@ -1948,6 +1984,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateExpense,
         deleteExpense,
         approveExpense,
+
+        fdrs,
+        addFdr,
+        deleteFdr,
 
         transactions,
         monthlyDues: computedMonthlyDues,

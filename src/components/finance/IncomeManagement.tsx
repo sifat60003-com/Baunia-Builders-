@@ -32,18 +32,20 @@ export const IncomeManagement: React.FC = () => {
 
   // Form State
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<IncomeCategory>('admission_fee');
+  const [category, setCategory] = useState<IncomeCategory>('bank_profit');
   const [amount, setAmount] = useState<number>(5000);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [reference, setReference] = useState('');
   const [description, setDescription] = useState('');
 
-  const filteredIncomes = incomes.filter(i => 
-    i.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (i.reference && i.reference.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredIncomes = incomes.filter(i => {
+    const t = (i.title || i.description || '').toLowerCase();
+    const c = (i.category || '').toLowerCase();
+    const r = (i.reference || i.refNumber || '').toLowerCase();
+    const term = searchTerm.toLowerCase();
+    return t.includes(term) || c.includes(term) || r.includes(term);
+  });
 
   const totalIncome = incomes.reduce((sum, i) => sum + i.amount, 0);
 
@@ -105,7 +107,7 @@ export const IncomeManagement: React.FC = () => {
       </div>
 
       {/* Income Summary Card */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center gap-4">
           <div className="p-3 rounded-xl bg-emerald-100 text-emerald-700">
             <Coins className="w-6 h-6" />
@@ -126,18 +128,6 @@ export const IncomeManagement: React.FC = () => {
             <div className="text-xs text-slate-500 font-semibold">মোট আয় ভাউচার এন্ট্রি</div>
             <div className="text-xl font-extrabold text-slate-900 mt-0.5">
               {language === 'bn' ? toBnDigits(incomes.length) : incomes.length} টি
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-teal-100 text-teal-700">
-            <Tag className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 font-semibold">প্রধান আয়ের উৎস</div>
-            <div className="text-base font-extrabold text-teal-900 mt-0.5">
-              ভর্তি ফি ও জমি শেয়ার
             </div>
           </div>
         </div>
@@ -182,12 +172,14 @@ export const IncomeManagement: React.FC = () => {
                     {formatDate(inc.date, language === 'bn')}
                   </td>
                   <td className="py-3 px-4 font-bold text-slate-900">
-                    <div>{inc.title}</div>
-                    {inc.description && <div className="text-[10px] text-slate-400 font-normal">{inc.description}</div>}
+                    <div>{inc.title || inc.description || 'আয়'}</div>
+                    {inc.title && inc.description && inc.description !== inc.title && (
+                      <div className="text-[10px] text-slate-400 font-normal">{inc.description}</div>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800">
-                      {translations[language][inc.category] || inc.category}
+                      {translations[language]?.[inc.category as keyof typeof translations['bn']] || inc.category}
                     </span>
                   </td>
                   <td className="py-3 px-4 font-extrabold text-emerald-700 whitespace-nowrap">
@@ -197,7 +189,7 @@ export const IncomeManagement: React.FC = () => {
                     {inc.paymentMethod}
                   </td>
                   <td className="py-3 px-4 text-slate-500 font-medium">
-                    {inc.recordedBy}
+                    {inc.recordedBy || inc.addedBy || 'Admin'}
                   </td>
                   <td className="py-3 px-4 text-right no-print">
                     <button
@@ -245,12 +237,8 @@ export const IncomeManagement: React.FC = () => {
                     onChange={(e) => setCategory(e.target.value as IncomeCategory)}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
                   >
-                    <option value="admission_fee">ভর্তি ফি (Admission Fee)</option>
-                    <option value="share_sale">শেয়ার বিক্রি (Share Sale)</option>
-                    <option value="project_profit">প্রকল্প লাভ (Project Profit)</option>
                     <option value="bank_profit">ব্যাংক মুনাফা (Bank Profit)</option>
-                    <option value="donation">অনুদান (Donation)</option>
-                    <option value="others">অন্যান্য আয় (Others)</option>
+                    <option value="others">অন্যান্য (Others)</option>
                   </select>
                 </div>
 

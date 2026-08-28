@@ -33,7 +33,7 @@ export const ExpenseManagement: React.FC = () => {
 
   // Form State
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<ExpenseCategory>('office_rent');
+  const [category, setCategory] = useState<ExpenseCategory>('bank_deduction');
   const [amount, setAmount] = useState<number>(12000);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [voucherNo, setVoucherNo] = useState(`EXP-2026-${String(expenses.length + 1).padStart(4, '0')}`);
@@ -42,12 +42,14 @@ export const ExpenseManagement: React.FC = () => {
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<'approved' | 'pending'>('approved');
 
-  const filteredExpenses = expenses.filter(e => 
-    e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.voucherNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.paidTo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredExpenses = expenses.filter(e => {
+    const t = (e.title || e.description || '').toLowerCase();
+    const c = (e.category || '').toLowerCase();
+    const v = (e.voucherNo || e.expenseId || '').toLowerCase();
+    const p = (e.paidTo || '').toLowerCase();
+    const term = searchTerm.toLowerCase();
+    return t.includes(term) || c.includes(term) || v.includes(term) || p.includes(term);
+  });
 
   const totalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
 
@@ -114,7 +116,7 @@ export const ExpenseManagement: React.FC = () => {
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center gap-4">
           <div className="p-3 rounded-xl bg-rose-100 text-rose-700">
             <TrendingDown className="w-6 h-6" />
@@ -135,18 +137,6 @@ export const ExpenseManagement: React.FC = () => {
             <div className="text-xs text-slate-500 font-semibold">মোট অনুমোদিত ভাউচার</div>
             <div className="text-xl font-extrabold text-slate-900 mt-0.5">
               {language === 'bn' ? toBnDigits(expenses.length) : expenses.length} টি
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-purple-100 text-purple-700">
-            <Tag className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 font-semibold">প্রধান ব্যয়ের খাত</div>
-            <div className="text-base font-extrabold text-purple-950 mt-0.5">
-              অফিস ভাড়া ও কর্মকর্তা বেতন
             </div>
           </div>
         </div>
@@ -185,22 +175,24 @@ export const ExpenseManagement: React.FC = () => {
               {filteredExpenses.map(exp => (
                 <tr key={exp.id} className="hover:bg-rose-50/30 transition">
                   <td className="py-3 px-4 font-mono font-bold text-slate-700 whitespace-nowrap">
-                    {exp.voucherNo}
+                    {exp.voucherNo || exp.expenseId || 'EXP'}
                   </td>
                   <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
                     {formatDate(exp.date, language === 'bn')}
                   </td>
                   <td className="py-3 px-4 font-bold text-slate-900">
-                    <div>{exp.title}</div>
-                    {exp.description && <div className="text-[10px] text-slate-400 font-normal">{exp.description}</div>}
+                    <div>{exp.title || exp.description || 'ব্যয়'}</div>
+                    {exp.title && exp.description && exp.description !== exp.title && (
+                      <div className="text-[10px] text-slate-400 font-normal">{exp.description}</div>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-800">
-                      {translations[language][exp.category] || exp.category}
+                      {translations[language]?.[exp.category as keyof typeof translations['bn']] || exp.category}
                     </span>
                   </td>
                   <td className="py-3 px-4 font-medium text-slate-700">
-                    {exp.paidTo}
+                    {exp.paidTo || 'অফিস ক্যাশ'}
                   </td>
                   <td className="py-3 px-4 font-extrabold text-rose-600 whitespace-nowrap">
                     {formatCurrency(exp.amount, language === 'bn')}
@@ -280,15 +272,8 @@ export const ExpenseManagement: React.FC = () => {
                     onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
                   >
-                    <option value="office_rent">অফিস ভাড়া (Office Rent)</option>
-                    <option value="staff_salary">কর্মচারী বেতন (Staff Salary)</option>
-                    <option value="entertainment">আপ্যায়ন ব্যয় (Entertainment)</option>
-                    <option value="stationery">স্টেশনারি ও প্রিন্টিং (Stationery)</option>
-                    <option value="utility">বিদ্যুৎ ও ইউটিলিটি বিল (Utility)</option>
-                    <option value="land_development">জমি উন্নয়ন ও সার্ভে (Land Dev)</option>
-                    <option value="legal_fees">আইন ও দলিল খরচ (Legal Fees)</option>
-                    <option value="maintenance">মেরামত ও রক্ষণাবেক্ষণ (Maintenance)</option>
-                    <option value="others">অন্যান্য খরচ (Others)</option>
+                    <option value="bank_deduction">ব্যাংক কর্তন (Bank Deduction)</option>
+                    <option value="others">অন্যান্য (Others)</option>
                   </select>
                 </div>
 

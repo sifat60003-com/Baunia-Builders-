@@ -21,7 +21,8 @@ import {
   ShieldCheck,
   ChevronRight,
   Printer,
-  CheckCircle2
+  CheckCircle2,
+  Landmark
 } from 'lucide-react';
 import { formatCurrency, formatDate, toBnDigits } from '../../utils/formatters';
 import { translations } from '../../utils/translations';
@@ -36,6 +37,7 @@ export const DashboardView: React.FC = () => {
     incomes,
     expenses,
     monthlyDues,
+    fdrs,
     setActiveTab, 
     setSelectedMemberId, 
     setSelectedReceiptId 
@@ -143,6 +145,17 @@ export const DashboardView: React.FC = () => {
       textColor: 'text-purple-700',
       bgColor: 'bg-purple-50',
       onClick: () => setActiveTab('expenses'),
+    },
+    {
+      id: 'total-fdr',
+      title: t('totalFdr'),
+      value: formatCurrency(stats.totalFdr, language === 'bn'),
+      sub: `${fdrs.length} ${language === 'bn' ? 'টি FDR অ্যাকাউন্ট' : 'FDR Accounts'}`,
+      icon: Landmark,
+      color: 'from-indigo-600 to-purple-800',
+      textColor: 'text-indigo-700',
+      bgColor: 'bg-indigo-50',
+      onClick: () => setActiveTab('fdr'),
     },
     {
       id: 'current-balance',
@@ -621,6 +634,68 @@ export const DashboardView: React.FC = () => {
                         >
                           {t('collectDue')}
                         </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* FDR Table Bento Card */}
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs overflow-hidden flex flex-col lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-slate-800 flex items-center gap-2.5 text-base">
+              <span className="w-1.5 h-5 bg-indigo-600 rounded-full"></span>
+              <span>{language === 'bn' ? 'FDR হিসাব তালিকা (মেয়াদ: ৩, ৬, ৯, ১২ মাস)' : 'FDR Accounts (3, 6, 9, 12 Months Tenure)'}</span>
+            </h2>
+            <button
+              onClick={() => setActiveTab('fdr')}
+              className="text-xs text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
+            >
+              {t('viewAll')} →
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            {fdrs.length === 0 ? (
+              <div className="py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <Landmark className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p className="text-xs font-semibold text-slate-600">
+                  {language === 'bn' ? 'কোনো FDR হিসাব নেই' : 'No FDR accounts found'}
+                </p>
+              </div>
+            ) : (
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                    <th className="pb-3 font-semibold">{language === 'bn' ? 'FDR নম্বর' : 'FDR No'}</th>
+                    <th className="pb-3 font-semibold">{language === 'bn' ? 'ব্যাংক' : 'Bank'}</th>
+                    <th className="pb-3 font-semibold">{language === 'bn' ? 'তারিখ' : 'Date'}</th>
+                    <th className="pb-3 font-semibold">{language === 'bn' ? 'মেয়াদ' : 'Tenure'}</th>
+                    <th className="pb-3 font-semibold text-right">{language === 'bn' ? 'অ্যামাউন্ট' : 'Amount'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 text-slate-600 font-medium">
+                  {fdrs.slice(0, 5).map(fdr => (
+                    <tr key={fdr.id} className="hover:bg-slate-50/80 transition">
+                      <td className="py-3 font-mono font-bold text-indigo-600">
+                        {language === 'bn' ? toBnDigits(fdr.fdrNo) : fdr.fdrNo}
+                      </td>
+                      <td className="py-3 font-semibold text-slate-900">
+                        {fdr.bankName}
+                      </td>
+                      <td className="py-3 text-slate-500">
+                        {language === 'bn' ? toBnDigits(formatDate(fdr.date)) : formatDate(fdr.date)}
+                      </td>
+                      <td className="py-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700">
+                          {language === 'bn' ? `${toBnDigits(fdr.tenureMonths)} মাস` : `${fdr.tenureMonths} Months`}
+                        </span>
+                      </td>
+                      <td className="py-3 font-extrabold text-slate-900 text-right">
+                        {formatCurrency(fdr.amount, language === 'bn')}
                       </td>
                     </tr>
                   ))}

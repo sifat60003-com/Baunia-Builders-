@@ -26,6 +26,7 @@ export const translations = {
     navIncome: 'আয় (Income)',
     navExpenses: 'ব্যয় (Expense)',
     navCashBook: 'ক্যাশ বুক (হিসাব)',
+    navFdr: 'FDR ম্যানেজমেন্ট',
     navTransactions: 'লেনদেন হিস্ট্রি',
     navReports: 'রিপোর্টস ও স্টেটমেন্ট',
     navUsers: 'ইউজার ও এক্সেস',
@@ -44,6 +45,7 @@ export const translations = {
     totalDue: 'মোট বকেয়া',
     totalIncome: 'মোট আয়',
     totalExpenses: 'মোট ব্যয়',
+    totalFdr: 'মোট FDR',
     currentBalance: 'বর্তমান ক্যাশ ব্যালেন্স',
 
     // Dashboard Actions & Sections
@@ -106,6 +108,13 @@ export const translations = {
     special_deposit: 'বিশেষ জমা',
     previous_due: 'পূর্বের বকেয়া পরিশোধ',
     other: 'অন্যান্য জমা',
+    admission_fee: 'ভর্তি ফি',
+    share_sale: 'জমি শেয়ার',
+    office_rent: 'অফিস ভাড়া',
+    staff_salary: 'কর্মকর্তা বেতন',
+    bank_profit: 'ব্যাংক মুনাফা',
+    bank_deduction: 'ব্যাংক কর্তন',
+    others: 'অন্যান্য',
 
     // Payment Methods
     cash: 'নগদ ক্যাশ',
@@ -166,6 +175,7 @@ export const translations = {
     navIncome: 'Income',
     navExpenses: 'Expenses',
     navCashBook: 'Cash Book',
+    navFdr: 'FDR Management',
     navTransactions: 'Transactions',
     navReports: 'Reports & Statements',
     navUsers: 'Users & Roles',
@@ -184,6 +194,7 @@ export const translations = {
     totalDue: 'Total Due',
     totalIncome: 'Total Income',
     totalExpenses: 'Total Expenses',
+    totalFdr: 'Total FDR',
     currentBalance: 'Cash Balance',
 
     // Dashboard Actions & Sections
@@ -246,6 +257,13 @@ export const translations = {
     special_deposit: 'Special Deposit',
     previous_due: 'Previous Due Payment',
     other: 'Other Deposit',
+    admission_fee: 'Admission Fee',
+    share_sale: 'Land Share',
+    office_rent: 'Office Rent',
+    staff_salary: 'Staff Salary',
+    bank_profit: 'Bank Profit',
+    bank_deduction: 'Bank Deduction',
+    others: 'Others',
 
     // Payment Methods
     cash: 'Cash',

@@ -138,52 +138,59 @@ export interface PaymentReceipt {
 }
 
 export type IncomeCategory = 
-  | 'membership_fee' 
-  | 'share_income' 
-  | 'investment_return' 
-  | 'donation' 
-  | 'rental_income' 
-  | 'project_return' 
-  | 'other';
+  | 'bank_profit'
+  | 'others';
 
 export interface Income {
   id: string;
   incomeId: string; // e.g. INC-0001
   date: string;
-  category: IncomeCategory;
+  category: IncomeCategory | string;
+  title?: string;
   description: string;
   amount: number;
   paymentMethod: PaymentMethod;
+  reference?: string;
   refNumber?: string;
+  recordedBy?: string;
   addedBy: string;
   createdAt: string;
 }
 
 export type ExpenseCategory = 
-  | 'office_rent' 
-  | 'salary' 
-  | 'transportation' 
-  | 'utility_bill' 
-  | 'meeting_expense' 
-  | 'maintenance' 
-  | 'legal_fee' 
-  | 'tea_snack' 
-  | 'stationery' 
-  | 'investment' 
-  | 'other';
+  | 'bank_deduction'
+  | 'others';
 
 export interface Expense {
   id: string;
   expenseId: string; // e.g. EXP-0001
   date: string;
-  category: ExpenseCategory;
+  category: ExpenseCategory | string;
+  title?: string;
   description: string;
   amount: number;
   paymentMethod: PaymentMethod;
+  voucherNo?: string;
+  paidTo?: string;
   refNumber?: string;
   approvedBy: string;
+  recordedBy?: string;
   addedBy: string;
   status: 'approved' | 'pending';
+  createdAt: string;
+}
+
+export interface FdrItem {
+  id: string;
+  fdrNo: string; // e.g. FDR-2026-0001
+  bankName: string; // ব্যাংক বা প্রতিষ্ঠানের নাম
+  amount: number; // অ্যামাউন্ট
+  date: string; // তারিখ
+  tenureMonths: number; // সময়: 3, 6, 9, 12 মাস
+  interestRate?: number; // সুদের হার %
+  status: 'active' | 'matured' | 'closed';
+  notes?: string;
+  addedBy: string;
   createdAt: string;
 }
 

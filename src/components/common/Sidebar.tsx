@@ -21,7 +21,8 @@ import {
   Sparkles,
   ChevronRight,
   LogOut,
-  Camera
+  Camera,
+  Landmark
 } from 'lucide-react';
 import { toBnDigits } from '../../utils/formatters';
 
@@ -40,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     members, 
     monthlyDues, 
     receipts,
+    fdrs,
     switchRole,
     setIsAuthenticated
   } = useApp();
@@ -106,6 +108,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       id: 'cashbook',
       label: t('navCashBook'),
       icon: BookOpen,
+      roles: ['super_admin', 'admin', 'accountant'],
+    },
+    {
+      id: 'fdr',
+      label: t('navFdr'),
+      icon: Landmark,
+      badge: fdrs.filter(f => f.status === 'active').length,
+      badgeColor: 'bg-indigo-600',
       roles: ['super_admin', 'admin', 'accountant'],
     },
     {
