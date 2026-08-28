@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import defaultLogo from '../../assets/images/baunia_builders_logo_1787927051112.jpg';
 import { 
   Search, 
   Building2, 
@@ -250,8 +251,13 @@ export const PublicPortal: React.FC = () => {
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md shadow-xs border-b border-slate-200 py-4 px-4 sm:px-6 flex justify-between items-center sticky top-0 z-10">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentView('home')}>
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-600/20 transform -rotate-3">
-            <Building2 className="w-5 h-5 text-white transform rotate-3" />
+          <div className="w-11 h-11 bg-white rounded-xl p-0.5 shadow-md ring-1 ring-slate-200/80 flex items-center justify-center overflow-hidden shrink-0">
+            <img 
+              src={settings.logoUrl || defaultLogo} 
+              alt="বাউনিয়া বিল্ডার্স লোগো" 
+              className="w-full h-full object-contain rounded-lg"
+              referrerPolicy="no-referrer"
+            />
           </div>
           <div>
             <h1 className="font-bold text-slate-800 text-base sm:text-lg leading-tight tracking-tight">{settings.nameBn}</h1>
@@ -390,21 +396,36 @@ export const PublicPortal: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Masked Preview Card */}
-                        <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-blue-600/30 border border-blue-500/30 text-blue-300 flex items-center justify-center font-bold text-lg">
-                              {searchedMember.nameBn ? searchedMember.nameBn[0] : 'S'}
-                            </div>
-                            <div>
-                              <p className="font-bold text-slate-200 text-base">{maskName(searchedMember.nameBn)}</p>
-                              <p className="text-xs font-mono text-slate-400">মোবাইল: {maskPhone(searchedMember.mobile)}</p>
+                        {/* Preview Card with Full Name & Photo */}
+                        <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                          <div className="flex items-center gap-3.5 w-full sm:w-auto">
+                            {searchedMember.photoUrl ? (
+                              <img
+                                src={searchedMember.photoUrl}
+                                alt={searchedMember.nameBn}
+                                className="w-14 h-14 rounded-2xl object-cover ring-2 ring-blue-500/40 shadow-md shrink-0 bg-slate-800"
+                              />
+                            ) : (
+                              <div className="w-14 h-14 rounded-2xl bg-blue-600/30 border border-blue-500/40 text-blue-300 flex items-center justify-center font-bold text-xl shrink-0">
+                                <User className="w-7 h-7 text-blue-200" />
+                              </div>
+                            )}
+                            <div className="space-y-0.5">
+                              <h4 className="font-extrabold text-white text-base sm:text-lg tracking-tight">
+                                {searchedMember.nameBn}
+                              </h4>
+                              {searchedMember.nameEn && (
+                                <p className="text-xs text-slate-300 font-medium">{searchedMember.nameEn}</p>
+                              )}
+                              <p className="text-xs font-mono text-slate-400">
+                                মোবাইল: <span className="font-bold text-amber-300">{searchedMember.mobile}</span>
+                              </p>
                             </div>
                           </div>
 
-                          <div className="text-right">
-                            <span className="text-xs text-slate-400 font-medium block">অবস্থা</span>
-                            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg inline-block">
+                          <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 border-t sm:border-t-0 border-slate-700/60 pt-2 sm:pt-0">
+                            <span className="text-xs text-slate-400 font-medium">অবস্থা</span>
+                            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl inline-block">
                               {searchedMember.isPinSet ? 'পিন সেট করা আছে ✅' : '১ম বার সাইনইন 🔑'}
                             </span>
                           </div>

@@ -39,8 +39,10 @@ const MainContent: React.FC = () => {
       case 'member_new':
         return <MemberForm mode="create" />;
       case 'member_edit':
+      case 'member_form':
         return <MemberForm mode="edit" memberId={selectedMemberId} />;
       case 'member_profile':
+      case 'member_detail':
         return <MemberProfile />;
       case 'member_import':
         return <MemberImportModal />;

@@ -192,12 +192,36 @@ export const SettingsView: React.FC = () => {
         
         {/* Organization Identity */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-          <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100 flex items-center gap-2">
-            <Building className="w-4 h-4 text-blue-600" />
-            <span>১. প্রতিষ্ঠানের নাম ও যোগাযোগের ঠিকানা</span>
+          <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100 flex items-center gap-2 justify-between">
+            <div className="flex items-center gap-2">
+              <Building className="w-4 h-4 text-blue-600" />
+              <span>১. প্রতিষ্ঠানের নাম, অফিসিয়াল লোগো ও যোগাযোগের ঠিকানা</span>
+            </div>
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            {/* Logo Preview Block */}
+            <div className="md:col-span-2 bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-4">
+              <div className="w-16 h-16 bg-white border border-slate-200 rounded-xl p-1 shadow-xs flex items-center justify-center shrink-0">
+                {formData.logoUrl ? (
+                  <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-contain rounded-lg" />
+                ) : (
+                  <Building className="w-8 h-8 text-slate-400" />
+                )}
+              </div>
+              <div className="flex-1 space-y-1">
+                <p className="font-bold text-slate-800 text-xs">অফিসিয়াল সংস্থা লোগো (Official Logo)</p>
+                <p className="text-[11px] text-slate-500">সমস্ত রশিদ, শেয়ার সার্টিফিকেট, হেডার এবং সাইডবারে এই লোগো ব্যবহৃত হচ্ছে</p>
+                <input
+                  type="text"
+                  placeholder="Logo URL or Base64 Image Path"
+                  value={formData.logoUrl || ''}
+                  onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                  className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-mono"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block font-bold text-slate-700 mb-1">প্রতিষ্ঠানের নাম (বাংলা)</label>
               <input

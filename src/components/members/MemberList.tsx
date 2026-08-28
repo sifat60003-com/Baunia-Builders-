@@ -318,13 +318,12 @@ export const MemberList: React.FC = () => {
                       <div 
                         onClick={() => {
                           setSelectedMemberId(member.id);
-                          setActiveTab('member_form');
+                          setActiveTab('member_profile');
                         }}
                         className="font-bold text-slate-900 group-hover:text-blue-700 cursor-pointer text-sm flex items-center gap-1.5"
-                        title="সদস্য তথ্য সংশোধন ও ছবি আপলোড করতে ক্লিক করুন (Edit Form)"
+                        title="সদস্যের পূর্ণাঙ্গ প্রোফাইল দেখুন"
                       >
                         <span>{member.nameBn}</span>
-                        <Edit className="w-3.5 h-3.5 text-blue-500 opacity-60 group-hover:opacity-100 transition shrink-0" />
                       </div>
                       {member.nameEn && member.nameEn !== `Member ${member.memberNo}` && (
                         <div className="text-[11px] text-slate-400">

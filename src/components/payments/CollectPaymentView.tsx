@@ -107,15 +107,15 @@ export const CollectPaymentView: React.FC = () => {
     }
   }, [selectedMemberId]);
 
-  // When member changes or receipts update, auto-select their first due month (unpaid)
+  // When member changes, auto-select all their due months (unpaid)
   useEffect(() => {
     if (selectedMember) {
       const statusList = getMemberMonthlyStatusList(selectedMember.id, receipts, selectedMember.shareQty || 1, selectedMember.memberNo);
       const dueList = statusList.filter(s => (s.status === 'due' || s.status === 'partial') && s.schedule.id <= '2026-08');
       
       if (dueList.length > 0) {
-        // Select first due month by default
-        setSelectedMonthIds([dueList[0].schedule.id]);
+        // Auto-select ALL due months so user doesn't lose any due selection
+        setSelectedMonthIds(dueList.map(s => s.schedule.id));
       } else {
         const firstUnpaid = statusList.find(s => s.status !== 'paid');
         if (firstUnpaid) {
@@ -126,7 +126,7 @@ export const CollectPaymentView: React.FC = () => {
       }
       setIsManualAmount(false);
     }
-  }, [memberId, receipts]);
+  }, [memberId]);
 
   // When selectedMonthIds changes, auto update amount (locked/readOnly)
   useEffect(() => {

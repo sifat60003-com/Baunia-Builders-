@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Building2, Lock, User, LogIn, ArrowLeft } from 'lucide-react';
+import { Lock, User, LogIn, ArrowLeft } from 'lucide-react';
+import defaultLogo from '../../assets/images/baunia_builders_logo_1787927051112.jpg';
 
 interface LoginViewProps {
   onBack?: () => void;
@@ -12,6 +13,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onBack }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const logoSrc = settings.logoUrl || defaultLogo;
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,8 +56,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onBack }) => {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md animate-in fade-in zoom-in-95 duration-300">
         <div className="flex justify-center">
-          <div className="w-20 h-20 bg-blue-600 rounded-2xl shadow-lg shadow-blue-600/30 flex items-center justify-center transform -rotate-6">
-            <Building2 className="w-10 h-10 text-white transform rotate-6" />
+          <div className="w-24 h-24 bg-white rounded-3xl p-1 shadow-xl shadow-blue-900/10 ring-2 ring-slate-200/80 flex items-center justify-center overflow-hidden">
+            <img 
+              src={logoSrc} 
+              alt="বাউনিয়া বিল্ডার্স লোগো" 
+              className="w-full h-full object-contain rounded-2xl"
+              referrerPolicy="no-referrer"
+            />
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900 tracking-tight">

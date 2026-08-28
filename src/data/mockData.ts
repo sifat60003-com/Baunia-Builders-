@@ -13,9 +13,12 @@ import {
 } from '../types';
 import { generateMembersFromRaw, generateShareTransactionsFromMembers } from './importedMembers';
 
+import bauniaLogo from '../assets/images/baunia_builders_logo_1787927051112.jpg';
+
 export const initialSettings: OrganizationSettings = {
   nameBn: 'বাউনিয়া বিল্ডার্স',
   nameEn: 'BAUNIA BUILDERS',
+  logoUrl: bauniaLogo,
   addressBn: 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০',
   addressEn: 'Baunia Pukurpar, Turag, Dhaka-1230',
   phones: ['01833-805170', '01711-280514', '01739-704588'],
