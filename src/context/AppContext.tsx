@@ -405,6 +405,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       gender: 'male',
       dob: m.dob || '1990-01-01',
       nid: m.nid || (rawMatch ? rawMatch.nid : ''),
+      photoUrl: m.photo_url || m.photoUrl,
+      photoBackUrl: m.photo_back_url || m.photoBackUrl,
+      pin: m.pin || undefined,
+      isPinSet: m.is_pin_set !== undefined ? Boolean(m.is_pin_set) : Boolean(m.pin),
       monthlyFee: 2000,
       currentDeposit: Number(m.opening_balance || 0),
       currentDue: m.current_due !== undefined && m.current_due !== null ? Number(m.current_due) : calculatedDue,
@@ -876,9 +880,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       mother_name: newMember.motherName,
       mobile: newMember.mobile,
       alt_mobile: newMember.altMobile,
+      nid: newMember.nid,
       occupation: newMember.occupation,
       present_address: newMember.presentAddress,
       permanent_address: newMember.permanentAddress,
+      photo_url: newMember.photoUrl,
+      photo_back_url: newMember.photoBackUrl,
+      pin: newMember.pin,
+      is_pin_set: newMember.isPinSet || false,
       join_date: newMember.joinDate,
       status: newMember.status,
       share_qty: newMember.shareQty,
@@ -946,6 +955,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return m;
       })
     );
+
+    if (isSupabaseConfigured()) {
+      const supabasePayload: any = {};
+      if (memberData.nameBn !== undefined) supabasePayload.name_bn = memberData.nameBn;
+      if (memberData.nameEn !== undefined) supabasePayload.name_en = memberData.nameEn;
+      if (memberData.fatherName !== undefined) supabasePayload.father_name = memberData.fatherName;
+      if (memberData.motherName !== undefined) supabasePayload.mother_name = memberData.motherName;
+      if (memberData.mobile !== undefined) supabasePayload.mobile = memberData.mobile;
+      if (memberData.altMobile !== undefined) supabasePayload.alt_mobile = memberData.altMobile;
+      if (memberData.nid !== undefined) supabasePayload.nid = memberData.nid;
+      if (memberData.photoUrl !== undefined) supabasePayload.photo_url = memberData.photoUrl;
+      if (memberData.photoBackUrl !== undefined) supabasePayload.photo_back_url = memberData.photoBackUrl;
+      if (memberData.pin !== undefined) supabasePayload.pin = memberData.pin;
+      if (memberData.isPinSet !== undefined) supabasePayload.is_pin_set = memberData.isPinSet;
+      if (memberData.status !== undefined) supabasePayload.status = memberData.status;
+      if (memberData.shareQty !== undefined) supabasePayload.share_qty = memberData.shareQty;
+      if (memberData.sharePrice !== undefined) supabasePayload.share_price = memberData.sharePrice;
+      if (memberData.openingBalance !== undefined) supabasePayload.opening_balance = memberData.openingBalance;
+      if (memberData.currentDue !== undefined) supabasePayload.current_due = memberData.currentDue;
+      supabasePayload.updated_at = new Date().toISOString();
+
+      supabase.from('members').update(supabasePayload).eq('id', id).then(({ error }) => {
+        if (error) console.error('Supabase update member error:', error);
+      });
+    }
+
     addAuditLog('MEMBER_UPDATE', `সদস্য তথ্য আপডেট: ${id}`);
     showToast(t('successSaved'), 'success');
   };

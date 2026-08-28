@@ -48,6 +48,7 @@ export interface Member {
   presentAddress: string;
   permanentAddress: string;
   photoUrl?: string;
+  photoBackUrl?: string;
   joinDate: string;
   status: MemberStatus;
   shareQty: number;

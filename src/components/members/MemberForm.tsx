@@ -55,6 +55,7 @@ export const MemberForm: React.FC = () => {
   const [presentAddress, setPresentAddress] = useState(existingMember?.presentAddress || 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০');
   const [permanentAddress, setPermanentAddress] = useState(existingMember?.permanentAddress || 'বাউনিয়া, তুরাগ, ঢাকা');
   const [photoUrl, setPhotoUrl] = useState(existingMember?.photoUrl || '');
+  const [photoBackUrl, setPhotoBackUrl] = useState(existingMember?.photoBackUrl || '');
   const [pin, setPin] = useState(existingMember?.pin || '');
 
   // Membership & Share Fields
@@ -136,6 +137,21 @@ export const MemberForm: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleMemberPhotoBackUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('ছবির সাইজ ৫MB এর কম হতে হবে', 'warning');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoBackUrl(reader.result as string);
+      showToast('NID/আইডি কার্ডের পিছনের অংশের ছবি আপলোড হয়েছে', 'success');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleNomineePhotoUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -187,6 +203,7 @@ export const MemberForm: React.FC = () => {
       presentAddress: presentAddress.trim(),
       permanentAddress: permanentAddress.trim(),
       photoUrl: photoUrl.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+      photoBackUrl: photoBackUrl.trim() || undefined,
       joinDate,
       status,
       shareQty: Number(shareQty),
@@ -464,9 +481,9 @@ export const MemberForm: React.FC = () => {
             </div>
 
             {/* Member Photo (Upload & URL) */}
-            <div className="sm:col-span-2 space-y-2">
+            <div className="space-y-2">
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                সদস্যের ছবি (Profile Photo)
+                সদস্যের সামনের ছবি / Profile Photo (Front)
               </label>
               <div className="flex flex-wrap items-center gap-3">
                 {photoUrl ? (
@@ -481,11 +498,11 @@ export const MemberForm: React.FC = () => {
                   </div>
                 )}
                 
-                <div className="flex-1 space-y-2 min-w-[220px]">
+                <div className="flex-1 space-y-2 min-w-[200px]">
                   <div className="flex items-center gap-2">
                     <label className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl border border-blue-200 cursor-pointer transition">
                       <Upload className="w-3.5 h-3.5" />
-                      <span>ছবি আপলোড করুন</span>
+                      <span>ছবি আপলোড</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -499,7 +516,7 @@ export const MemberForm: React.FC = () => {
                         onClick={() => setPhotoUrl('')}
                         className="text-xs text-rose-600 hover:underline font-medium"
                       >
-                        ছবি সরান
+                        সরান
                       </button>
                     )}
                   </div>
@@ -507,8 +524,59 @@ export const MemberForm: React.FC = () => {
                     type="text"
                     value={photoUrl}
                     onChange={(e) => setPhotoUrl(e.target.value)}
-                    placeholder="অথবা ছবির ওয়েব লিংক (https://...)"
+                    placeholder="ছবি URL..."
                     className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Member Photo Back (NID Back / Document Back) */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                NID / ডকুমেন্টের পিছনের ছবি (Photo Back)
+              </label>
+              <div className="flex flex-wrap items-center gap-3">
+                {photoBackUrl ? (
+                  <img
+                    src={photoBackUrl}
+                    alt="Photo Back Preview"
+                    className="w-14 h-14 rounded-2xl object-cover ring-2 ring-indigo-500/30 shadow-xs shrink-0 bg-slate-100"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center shrink-0 border border-slate-200">
+                    <User className="w-7 h-7 opacity-50" />
+                  </div>
+                )}
+                
+                <div className="flex-1 space-y-2 min-w-[200px]">
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl border border-indigo-200 cursor-pointer transition">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>পিছনের ছবি আপলোড</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleMemberPhotoBackUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {photoBackUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setPhotoBackUrl('')}
+                        className="text-xs text-rose-600 hover:underline font-medium"
+                      >
+                        সরান
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={photoBackUrl}
+                    onChange={(e) => setPhotoBackUrl(e.target.value)}
+                    placeholder="পিছনের ছবির URL..."
+                    className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-hidden font-medium"
                   />
                 </div>
               </div>

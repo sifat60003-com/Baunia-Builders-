@@ -659,6 +659,42 @@ export const MemberProfile: React.FC = () => {
                 <span className="text-slate-400 block mb-0.5">স্থায়ী ঠিকানা:</span>
                 <span className="font-medium text-slate-900">{member.permanentAddress}</span>
               </div>
+              
+              {/* Photo Front & Photo Back Display */}
+              <div className="col-span-2 pt-3 border-t border-slate-100">
+                <span className="text-slate-500 block mb-2 font-bold">সদস্যের ছবি ও NID/আইডি কার্ড (Photo Front & Back):</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center space-y-1">
+                    <span className="text-[10px] text-slate-500 block font-semibold">সামনের ছবি (Front Photo)</span>
+                    {member.photoUrl ? (
+                      <img
+                        src={member.photoUrl}
+                        alt="Front Photo"
+                        className="w-full h-28 object-cover rounded-lg border border-slate-200 shadow-2xs"
+                      />
+                    ) : (
+                      <div className="w-full h-28 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs">
+                        সামনের ছবি নেই
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center space-y-1">
+                    <span className="text-[10px] text-slate-500 block font-semibold">পিছনের ছবি / NID Back</span>
+                    {member.photoBackUrl ? (
+                      <img
+                        src={member.photoBackUrl}
+                        alt="Back Photo"
+                        className="w-full h-28 object-cover rounded-lg border border-slate-200 shadow-2xs"
+                      />
+                    ) : (
+                      <div className="w-full h-28 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs">
+                        পিছনের ছবি নেই
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
