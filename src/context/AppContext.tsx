@@ -429,6 +429,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   };
 
+  const refreshMembers = async () => {
+    if (isSupabaseConfigured()) {
+      const { data: membersData, error: mErr } = await supabase.from('members').select('*');
+      if (membersData) {
+        setMembers(membersData.map(mapSupabaseMember));
+      } else if (mErr) {
+        console.warn('Supabase refresh members err:', mErr.message);
+      }
+    }
+  };
+
   const mapSupabaseReceipt = (r: any): PaymentReceipt => {
     let pMonths: string[] = [];
     if (r.payment_months) {
@@ -988,10 +999,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (memberData.sharePrice !== undefined) supabasePayload.share_price = memberData.sharePrice;
       if (memberData.openingBalance !== undefined) supabasePayload.opening_balance = memberData.openingBalance;
       if (memberData.currentDue !== undefined) supabasePayload.current_due = memberData.currentDue;
+      if (memberData.presentAddress !== undefined) supabasePayload.present_address = memberData.presentAddress;
+      if (memberData.permanentAddress !== undefined) supabasePayload.permanent_address = memberData.permanentAddress;
       supabasePayload.updated_at = new Date().toISOString();
 
       supabase.from('members').update(supabasePayload).eq('id', id).then(({ error }) => {
         if (error) console.error('Supabase update member error:', error);
+        else refreshMembers();
       });
     }
 
