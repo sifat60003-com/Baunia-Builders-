@@ -56,6 +56,8 @@ export const MemberForm: React.FC = () => {
   const [permanentAddress, setPermanentAddress] = useState(existingMember?.permanentAddress || 'বাউনিয়া, তুরাগ, ঢাকা');
   const [photoUrl, setPhotoUrl] = useState(existingMember?.photoUrl || '');
   const [photoBackUrl, setPhotoBackUrl] = useState(existingMember?.photoBackUrl || '');
+  const [nomineeAddress, setNomineeAddress] = useState(existingMember?.nomineeAddress || '');
+  const [nomineePhone, setNomineePhone] = useState(existingMember?.nomineePhone || '');
   const [pin, setPin] = useState(existingMember?.pin || '');
 
   // Membership & Share Fields
@@ -202,6 +204,8 @@ export const MemberForm: React.FC = () => {
       occupation: occupation.trim() || 'ব্যবসায়ী',
       presentAddress: presentAddress.trim(),
       permanentAddress: permanentAddress.trim(),
+      nomineeAddress: nomineeAddress.trim(),
+      nomineePhone: nomineePhone.trim(),
       photoUrl: photoUrl.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
       photoBackUrl: photoBackUrl.trim() || undefined,
       joinDate,
@@ -606,6 +610,30 @@ export const MemberForm: React.FC = () => {
                 rows={2}
                 value={permanentAddress}
                 onChange={(e) => setPermanentAddress(e.target.value)}
+                className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                নমিনির বর্তমান ঠিকানা
+              </label>
+              <input
+                type="text"
+                value={nomineeAddress}
+                onChange={(e) => setNomineeAddress(e.target.value)}
+                className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                নমিনির ফোন নম্বর
+              </label>
+              <input
+                type="text"
+                value={nomineePhone}
+                onChange={(e) => setNomineePhone(e.target.value)}
                 className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"
               />
             </div>
