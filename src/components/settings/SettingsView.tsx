@@ -20,16 +20,78 @@ import {
   Key,
   UploadCloud,
   Users,
-  Check
+  Check,
+  Camera,
+  User as UserIcon,
+  Trash2
 } from 'lucide-react';
 import { SystemSettings } from '../../types';
+import defaultLogo from '../../assets/images/baunia_builders_logo_1787932825880.jpg';
 import { getSupabaseCredentials, saveSupabaseCredentials, isSupabaseConfigured, supabase } from '../../lib/supabase';
 
 export const SettingsView: React.FC = () => {
-  const { settings, updateSettings, clearAllData, resetToDefaultData, syncAllDataToSupabase, reimport96MembersToSupabase, showToast, language, t } = useApp();
+  const { 
+    settings, 
+    updateSettings, 
+    clearAllData, 
+    resetToDefaultData, 
+    syncAllDataToSupabase, 
+    reimport96MembersToSupabase, 
+    showToast, 
+    language, 
+    t,
+    currentUser,
+    updateUser
+  } = useApp();
 
   const [formData, setFormData] = useState<SystemSettings>({ ...settings });
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+
+  // Admin Profile State
+  const [adminName, setAdminName] = useState(currentUser.name);
+  const [adminEmail, setAdminEmail] = useState(currentUser.email || '');
+  const [adminPhone, setAdminPhone] = useState(currentUser.phone || '');
+  const [adminAvatar, setAdminAvatar] = useState(currentUser.avatar || '');
+  const [isAdminSaving, setIsAdminSaving] = useState(false);
+
+  const handleAdminPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('ছবির সাইজ সর্বোচ্চ ৫ মেগাবাইট (5MB) হতে পারবে', 'warning');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAdminAvatar(reader.result as string);
+      showToast('ছবি লোড হয়েছে! "প্রোফাইল সংরক্ষণ" বাটনে চাপুন', 'info');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveAdminProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminName.trim()) {
+      showToast('এডমিনের নাম আবশ্যক', 'error');
+      return;
+    }
+    setIsAdminSaving(true);
+    try {
+      updateUser(currentUser.id, {
+        name: adminName.trim(),
+        email: adminEmail.trim(),
+        phone: adminPhone.trim(),
+        avatar: adminAvatar.trim() || undefined
+      });
+      showToast('এডমিন প্রোফাইল ও ছবি সফলভাবে সংরক্ষিত হয়েছে! ✅', 'success');
+    } catch (err: any) {
+      showToast('ত্রুটি: ' + err.message, 'error');
+    } finally {
+      setIsAdminSaving(false);
+    }
+  };
 
   // Supabase State
   const initialCreds = getSupabaseCredentials();
@@ -188,6 +250,144 @@ export const SettingsView: React.FC = () => {
         </button>
       </div>
 
+      {/* Admin Profile & Photo Management Card */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-blue-50 text-blue-700 rounded-xl">
+              <Camera className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">লগইনকৃত এডমিন প্রোফাইল ও ছবি (Admin Profile & Photo)</h2>
+              <p className="text-[11px] text-slate-500">আপনার ব্যক্তিগত প্রোফাইল ফটো আপলোড ও তথ্য পরিবর্তন করুন</p>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 bg-blue-100 text-blue-800 text-[10px] font-extrabold rounded-lg uppercase tracking-wider">
+            {currentUser.role.replace('_', ' ')}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+          {/* Avatar Preview & Upload Action */}
+          <div className="flex flex-col items-center p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-3">
+            <div className="relative group">
+              {adminAvatar ? (
+                <img
+                  src={adminAvatar}
+                  alt={adminName}
+                  className="w-28 h-28 rounded-full object-cover ring-4 ring-blue-600/30 shadow-md bg-white"
+                />
+              ) : (
+                <div className="w-28 h-28 rounded-full bg-linear-to-tr from-blue-600 to-indigo-700 text-white font-black text-3xl flex items-center justify-center ring-4 ring-blue-600/20 shadow-md">
+                  {adminName ? adminName.charAt(0).toUpperCase() : 'A'}
+                </div>
+              )}
+
+              <label className="absolute inset-0 bg-slate-900/60 rounded-full text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer">
+                <Camera className="w-6 h-6" />
+                <span className="text-[10px] font-bold mt-1">ফাইল বেছে নিন</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAdminPhotoUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div className="space-y-1 w-full">
+              <label className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer transition flex items-center justify-center gap-1.5">
+                <Upload className="w-3.5 h-3.5" />
+                <span>কম্পিউটার/মোবাইল থেকে আপলোড</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAdminPhotoUpload}
+                  className="hidden"
+                />
+              </label>
+
+              {adminAvatar && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminAvatar('');
+                    showToast('ছবি সরানো হয়েছে', 'info');
+                  }}
+                  className="w-full py-1.5 px-3 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl border border-rose-200 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>ছবি সরান</span>
+                </button>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-400">JPG, PNG, WebP (সর্বোচ্চ ৫ মেগাবাইট)</p>
+          </div>
+
+          {/* Admin Details Form */}
+          <div className="md:col-span-2 space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">এডমিনের পুরো নাম *</label>
+              <input
+                type="text"
+                required
+                value={adminName}
+                onChange={(e) => setAdminName(e.target.value)}
+                placeholder="যেমন: SIFAT HASAN SIAM"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">ইমেইল ঠিকানা</label>
+                <input
+                  type="email"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  placeholder="admin@bauniabuilders.com"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">মোবাইল নম্বর</label>
+                <input
+                  type="text"
+                  value={adminPhone}
+                  onChange={(e) => setAdminPhone(e.target.value)}
+                  placeholder="01833-405170"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-medium focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">ছবির সরাসরি ওয়েব লিংক (Image URL)</label>
+              <input
+                type="url"
+                value={adminAvatar}
+                onChange={(e) => setAdminAvatar(e.target.value)}
+                placeholder="https://images.unsplash.com/..."
+                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden"
+              />
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={handleSaveAdminProfile}
+                disabled={isAdminSaving}
+                className="flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition cursor-pointer disabled:opacity-50"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{isAdminSaving ? 'সংরক্ষণ হচ্ছে...' : 'এডমিন প্রোফাইল ও ছবি সংরক্ষণ করুন (Save)'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         
         {/* Organization Identity */}
@@ -201,24 +401,61 @@ export const SettingsView: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             {/* Logo Preview Block */}
-            <div className="md:col-span-2 bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-4">
-              <div className="w-16 h-16 bg-white border border-slate-200 rounded-xl p-1 shadow-xs flex items-center justify-center shrink-0">
-                {formData.logoUrl ? (
-                  <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-contain rounded-lg" />
-                ) : (
-                  <Building className="w-8 h-8 text-slate-400" />
-                )}
-              </div>
-              <div className="flex-1 space-y-1">
-                <p className="font-bold text-slate-800 text-xs">অফিসিয়াল সংস্থা লোগো (Official Logo)</p>
-                <p className="text-[11px] text-slate-500">সমস্ত রশিদ, শেয়ার সার্টিফিকেট, হেডার এবং সাইডবারে এই লোগো ব্যবহৃত হচ্ছে</p>
-                <input
-                  type="text"
-                  placeholder="Logo URL or Base64 Image Path"
-                  value={formData.logoUrl || ''}
-                  onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                  className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-mono"
+            <div className="md:col-span-2 bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col sm:flex-row items-center gap-4">
+              <div className="w-16 h-16 bg-white border border-slate-200 rounded-xl p-1 shadow-xs flex items-center justify-center shrink-0 overflow-hidden">
+                <img 
+                  src={(formData.logoUrl && !formData.logoUrl.includes('1787927051112')) ? formData.logoUrl : defaultLogo} 
+                  alt="Logo" 
+                  onError={(e) => { e.currentTarget.src = defaultLogo; }}
+                  className="w-full h-full object-contain rounded-lg" 
                 />
+              </div>
+              <div className="flex-1 space-y-1.5 w-full">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-800 text-xs">অফিসিয়াল সংস্থা লোগো (Official Logo)</p>
+                  <label className="text-[11px] text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg font-bold cursor-pointer transition flex items-center gap-1">
+                    <Upload className="w-3 h-3" />
+                    <span>লোগো ফাইল আপলোড</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setFormData(prev => ({ ...prev, logoUrl: reader.result as string }));
+                            showToast('নতুন লোগো লোড হয়েছে! "সেটিংস সংরক্ষণ করুন" বাটনে চাপুন', 'info');
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <p className="text-[11px] text-slate-500">সমস্ত রশিদ, শেয়ার সার্টিফিকেট, হেডার এবং সাইডবারে এই অফিসিয়াল লোগো প্রদর্শিত হবে</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Logo URL or Image Path"
+                    value={formData.logoUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                    className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs font-mono"
+                  />
+                  {formData.logoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, logoUrl: defaultLogo }));
+                        showToast('ডিফল্ট লোগো রিসেট হয়েছে', 'info');
+                      }}
+                      className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-[11px] font-bold cursor-pointer transition"
+                    >
+                      ডিফল্ট রিসেট
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 

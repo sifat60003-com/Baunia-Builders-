@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import defaultLogo from '../../assets/images/baunia_builders_logo_1787927051112.jpg';
+import defaultLogo from '../../assets/images/baunia_builders_logo_1787932825880.jpg';
 
 interface LogoProps {
   className?: string;
@@ -16,7 +16,32 @@ export const Logo: React.FC<LogoProps> = ({
   isLight = false 
 }) => {
   const { settings } = useApp();
-  const logoSrc = settings?.logoUrl || defaultLogo;
+  const rawUrl = settings?.logoUrl;
+  const initialLogo = (rawUrl && !rawUrl.includes('1787927051112')) ? rawUrl : defaultLogo;
+  
+  const [logoSrc, setLogoSrc] = useState<string>(initialLogo);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    if (settings?.logoUrl && !settings.logoUrl.includes('1787927051112')) {
+      setLogoSrc(settings.logoUrl);
+      setHasError(false);
+    } else {
+      setLogoSrc(defaultLogo);
+    }
+  }, [settings?.logoUrl]);
+
+  const handleImageError = () => {
+    if (!hasError) {
+      setHasError(true);
+      // Fallback first to default bundled asset, then /logo.png
+      if (logoSrc !== defaultLogo) {
+        setLogoSrc(defaultLogo);
+      } else {
+        setLogoSrc('/logo.png');
+      }
+    }
+  };
 
   const sizeMap = {
     sm: { icon: 36, text: 'text-sm', sub: 'text-[10px]' },
@@ -37,6 +62,7 @@ export const Logo: React.FC<LogoProps> = ({
         <img 
           src={logoSrc} 
           alt="বাউনিয়া বিল্ডার্স লোগো" 
+          onError={handleImageError}
           className="w-full h-full object-contain rounded-lg"
           referrerPolicy="no-referrer"
         />

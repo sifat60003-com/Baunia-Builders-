@@ -13,7 +13,7 @@ import {
 } from '../types';
 import { generateMembersFromRaw, generateShareTransactionsFromMembers } from './importedMembers';
 
-import bauniaLogo from '../assets/images/baunia_builders_logo_1787927051112.jpg';
+import bauniaLogo from '../assets/images/baunia_builders_logo_1787932825880.jpg';
 
 export const initialSettings: OrganizationSettings = {
   nameBn: 'বাউনিয়া বিল্ডার্স',

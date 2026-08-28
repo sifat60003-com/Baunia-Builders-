@@ -221,6 +221,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         
         // Settings Data Migration: Update legacy mock names to correct names
         if (parsedData.settings) {
+          // Always ensure valid new logo is active
+          if (!parsedData.settings.logoUrl || parsedData.settings.logoUrl.includes('1787927051112') || parsedData.settings.logoUrl.includes('baunia_builders_logo_1787927051112')) {
+            parsedData.settings.logoUrl = initialSettings.logoUrl;
+          }
+
           if (parsedData.settings.presidentName === 'মো: মোশাররফ হোসেন' || parsedData.settings.presidentName === 'মো: আব্দুল মালেক') {
             parsedData.settings.presidentName = 'মো: ফয়েজুর রহমান খান';
           }
@@ -500,7 +505,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             status: u.status,
             lastLogin: u.last_login,
             createdAt: u.created_at,
-            avatar: ''
+            avatar: u.avatar || u.avatar_url || ''
           })));
         } else if (uErr) {
           console.warn('Supabase users err:', uErr.message);
@@ -1484,6 +1489,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateUser = (id: string, updates: Partial<User>) => {
     setUsers(prev => prev.map(u => (u.id === id ? { ...u, ...updates } : u)));
+    if (currentUser.id === id) {
+      setCurrentUserState(prev => ({ ...prev, ...updates }));
+    }
+
+    if (isSupabaseConfigured()) {
+      const payload: any = {};
+      if (updates.name !== undefined) payload.name = updates.name;
+      if (updates.email !== undefined) payload.email = updates.email;
+      if (updates.phone !== undefined) payload.phone = updates.phone;
+      if (updates.role !== undefined) payload.role = updates.role;
+      if (updates.status !== undefined) payload.status = updates.status;
+      if (updates.avatar !== undefined) payload.avatar = updates.avatar;
+
+      supabase.from('users').update(payload).eq('id', id).then(({ error }) => {
+        if (error) console.error('Supabase user update err:', error);
+      });
+    }
+
+    addAuditLog('USER_UPDATE', `ইউজার তথ্য আপডেট: ${id}`);
     showToast(t('successSaved'), 'success');
   };
 
@@ -1668,6 +1692,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           phone: u.phone,
           role: u.role,
           status: u.status,
+          avatar: u.avatar || '',
           created_at: u.createdAt
         }));
         const { error: uErr } = await supabase.from('users').upsert(userPayload);

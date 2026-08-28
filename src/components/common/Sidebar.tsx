@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Logo } from './Logo';
+import { AdminProfileModal } from './AdminProfileModal';
 import { 
   LayoutDashboard, 
   Users, 
@@ -19,7 +20,8 @@ import {
   X,
   Sparkles,
   ChevronRight,
-  LogOut
+  LogOut,
+  Camera
 } from 'lucide-react';
 import { toBnDigits } from '../../utils/formatters';
 
@@ -43,6 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   } = useApp();
 
   const isMemberRole = currentUser.role === 'member';
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Navigation Items
   const menuItems = [
@@ -230,17 +233,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
         {/* Footer info & quick logout/switch */}
         <div className="p-4 border-t border-blue-700/50 bg-blue-900/40">
-          <div className="flex items-center gap-3 mb-2.5">
-            <div className="w-8 h-8 rounded-full bg-amber-400 text-slate-900 font-bold text-xs flex items-center justify-center border border-white/30 shadow-xs">
-              {currentUser.name.charAt(0)}
+          <div 
+            onClick={() => setIsProfileModalOpen(true)}
+            className="flex items-center gap-3 mb-2.5 p-1.5 -m-1.5 rounded-xl hover:bg-white/10 transition cursor-pointer group"
+            title="প্রোফাইল ছবি ও সেটিংস পরিবর্তন"
+          >
+            <div className="relative shrink-0">
+              {currentUser.avatar ? (
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
+                  className="w-9 h-9 rounded-full object-cover ring-2 ring-amber-400/80 shadow-xs"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-amber-400 text-slate-900 font-bold text-xs flex items-center justify-center border border-white/30 shadow-xs">
+                  {currentUser.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-blue-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-xs">
+                <Camera className="w-2 h-2" />
+              </div>
             </div>
-            <div className="overflow-hidden">
-              <p className="text-xs font-semibold text-white truncate">{currentUser.name}</p>
+            <div className="overflow-hidden flex-1">
+              <p className="text-xs font-semibold text-white truncate group-hover:text-amber-300 transition">{currentUser.name}</p>
               <p className="text-[10px] text-blue-200 capitalize">{currentUser.role.replace('_', ' ')}</p>
             </div>
           </div>
 
           <div className="flex items-center justify-between text-[11px] pt-2 border-t border-blue-700/40">
+            <button
+              onClick={() => setIsProfileModalOpen(true)}
+              className="text-blue-200 hover:text-white transition flex items-center gap-1 cursor-pointer"
+            >
+              <Camera className="w-3 h-3 text-amber-300" />
+              <span>ছবি পরিবর্তন</span>
+            </button>
             <button
               onClick={() => {
                 setIsAuthenticated(false);
@@ -254,6 +281,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
       </aside>
+
+      {/* Admin Profile Modal */}
+      <AdminProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </>
   );
 };

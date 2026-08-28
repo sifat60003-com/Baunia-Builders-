@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import defaultLogo from '../../assets/images/baunia_builders_logo_1787927051112.jpg';
+import defaultLogo from '../../assets/images/baunia_builders_logo_1787932825880.jpg';
 import { 
   Search, 
   Building2, 
@@ -253,8 +253,9 @@ export const PublicPortal: React.FC = () => {
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentView('home')}>
           <div className="w-11 h-11 bg-white rounded-xl p-0.5 shadow-md ring-1 ring-slate-200/80 flex items-center justify-center overflow-hidden shrink-0">
             <img 
-              src={settings.logoUrl || defaultLogo} 
+              src={(settings.logoUrl && !settings.logoUrl.includes('1787927051112')) ? settings.logoUrl : defaultLogo} 
               alt="বাউনিয়া বিল্ডার্স লোগো" 
+              onError={(e) => { e.currentTarget.src = defaultLogo; }}
               className="w-full h-full object-contain rounded-lg"
               referrerPolicy="no-referrer"
             />

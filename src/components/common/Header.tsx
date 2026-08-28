@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Logo } from './Logo';
+import { AdminProfileModal } from './AdminProfileModal';
 import { 
   Search, 
   Bell, 
@@ -13,7 +14,9 @@ import {
   ChevronDown, 
   LogOut,
   SlidersHorizontal,
-  ExternalLink
+  ExternalLink,
+  Camera,
+  User as UserIcon
 } from 'lucide-react';
 import { UserRole } from '../../types';
 import { translations } from '../../utils/translations';
@@ -41,6 +44,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
 
   const notifRef = useRef<HTMLDivElement>(null);
   const roleRef = useRef<HTMLDivElement>(null);
@@ -280,38 +284,76 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
           <div className="relative" ref={userRef}>
             <button
               onClick={() => setShowUserMenu(prev => !prev)}
-              className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-xl transition cursor-pointer group"
+              title="প্রোফাইল সেটিংস"
             >
-              <img
-                src={currentUser.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80'}
-                alt={currentUser.name}
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-600/20"
-              />
+              <div className="relative">
+                {currentUser.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-600/30"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-linear-to-tr from-blue-600 to-indigo-700 text-white font-bold text-xs flex items-center justify-center ring-2 ring-blue-600/20 shadow-xs">
+                    {currentUser.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-blue-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-xs">
+                  <Camera className="w-2 h-2" />
+                </div>
+              </div>
               <div className="hidden xl:flex flex-col text-left leading-none">
                 <span className="text-xs font-bold text-slate-900 truncate max-w-[120px]">
                   {currentUser.name}
                 </span>
                 <span className="text-[10px] font-semibold text-blue-600 uppercase mt-0.5">
-                  {currentUser.role}
+                  {currentUser.role.replace('_', ' ')}
                 </span>
               </div>
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
                 <div className="px-4 py-2.5 border-b border-slate-100">
-                  <div className="font-bold text-slate-900 text-sm truncate">
-                    {currentUser.name}
+                  <div className="flex items-center gap-2.5">
+                    {currentUser.avatar ? (
+                      <img
+                        src={currentUser.avatar}
+                        alt={currentUser.name}
+                        className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-600/20"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center">
+                        {currentUser.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="overflow-hidden">
+                      <div className="font-bold text-slate-900 text-sm truncate">
+                        {currentUser.name}
+                      </div>
+                      <div className="text-xs text-slate-500 truncate">
+                        {currentUser.email || currentUser.phone}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-500 truncate">
-                    {currentUser.email}
-                  </div>
-                  <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md">
+                  <span className="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md">
                     {language === 'bn' ? translations['bn'][currentUser.role] : translations['en'][currentUser.role]}
                   </span>
                 </div>
 
                 <div className="py-1">
+                  <button
+                    onClick={() => {
+                      setIsAdminProfileOpen(true);
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-blue-700 font-semibold hover:bg-blue-50/80 flex items-center gap-2 cursor-pointer transition"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-blue-600" />
+                    <span>প্রোফাইল ছবি ও তথ্য পরিবর্তন</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       setActiveTab('settings');
@@ -354,6 +396,12 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
 
         </div>
       </div>
+
+      {/* Admin Profile Modal */}
+      <AdminProfileModal
+        isOpen={isAdminProfileOpen}
+        onClose={() => setIsAdminProfileOpen(false)}
+      />
     </header>
   );
 };

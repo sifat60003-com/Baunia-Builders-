@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Lock, User, LogIn, ArrowLeft } from 'lucide-react';
-import defaultLogo from '../../assets/images/baunia_builders_logo_1787927051112.jpg';
+import defaultLogo from '../../assets/images/baunia_builders_logo_1787932825880.jpg';
 
 interface LoginViewProps {
   onBack?: () => void;
@@ -14,7 +14,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onBack }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const logoSrc = settings.logoUrl || defaultLogo;
+  const rawLogo = settings.logoUrl;
+  const logoSrc = (rawLogo && !rawLogo.includes('1787927051112')) ? rawLogo : defaultLogo;
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +61,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onBack }) => {
             <img 
               src={logoSrc} 
               alt="বাউনিয়া বিল্ডার্স লোগো" 
+              onError={(e) => { e.currentTarget.src = defaultLogo; }}
               className="w-full h-full object-contain rounded-2xl"
               referrerPolicy="no-referrer"
             />
