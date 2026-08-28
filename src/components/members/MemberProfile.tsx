@@ -62,82 +62,7 @@ export const MemberProfile: React.FC = () => {
 
   const member = members.find(m => m.id === selectedMemberId) || members[0];
 
-  // Quick Edit Modal State for Super Admin
-  const [isQuickEditOpen, setIsQuickEditOpen] = useState(false);
-  const [editForm, setEditForm] = useState({
-    nameBn: '',
-    nameEn: '',
-    mobile: '',
-    altMobile: '',
-    nid: '',
-    fatherName: '',
-    motherName: '',
-    presentAddress: '',
-    permanentAddress: '',
-    spouseName: '',
-    dob: '',
-    gender: 'male' as 'male' | 'female' | 'other',
-    birthRegNo: '',
-    nomineeAddress: '',
-    nomineePhone: '',
-    pin: '',
-    photoUrl: '',
-    status: 'active' as 'active' | 'inactive' | 'pending'
-  });
 
-  const openQuickEdit = () => {
-    if (!member) return;
-    setEditForm({
-      nameBn: member.nameBn || '',
-      nameEn: member.nameEn || '',
-      mobile: member.mobile || '',
-      altMobile: member.altMobile || '',
-      nid: member.nid || '',
-      fatherName: member.fatherName || '',
-      motherName: member.motherName || '',
-      presentAddress: member.presentAddress || '',
-      permanentAddress: member.permanentAddress || '',
-      spouseName: member.spouseName || '',
-      dob: member.dob || '',
-      gender: member.gender || 'male',
-      birthRegNo: member.birthRegNo || '',
-      nomineeAddress: member.nomineeAddress || '',
-      nomineePhone: member.nomineePhone || '',
-      pin: member.pin || (member.mobile ? member.mobile.slice(-4) : '1234'),
-      photoUrl: member.photoUrl || '',
-      status: member.status || 'active'
-    });
-    setIsQuickEditOpen(true);
-  };
-
-  const handleSaveQuickEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!member) return;
-
-    updateMember(member.id, {
-      nameBn: editForm.nameBn.trim(),
-      nameEn: editForm.nameEn.trim(),
-      mobile: editForm.mobile.trim(),
-      altMobile: editForm.altMobile.trim() || undefined,
-      nid: editForm.nid.trim(),
-      fatherName: editForm.fatherName.trim(),
-      motherName: editForm.motherName.trim(),
-      presentAddress: editForm.presentAddress.trim(),
-      permanentAddress: editForm.permanentAddress.trim(),
-      spouseName: editForm.spouseName.trim() || undefined,
-      dob: editForm.dob.trim() || undefined,
-      gender: editForm.gender,
-      birthRegNo: editForm.birthRegNo.trim() || undefined,
-      nomineeAddress: editForm.nomineeAddress.trim(),
-      nomineePhone: editForm.nomineePhone.trim(),
-      pin: editForm.pin.trim() || undefined,
-      photoUrl: editForm.photoUrl.trim() || undefined,
-      status: editForm.status
-    });
-
-    setIsQuickEditOpen(false);
-    showToast('সদস্যের তথ্য সফলভাবে সংশোধন ও সংরক্ষণ করা হয়েছে!', 'success');
-  };
 
   // Direct Photo Upload Handler
   const handleDirectPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,11 +152,14 @@ export const MemberProfile: React.FC = () => {
 
           {currentUser.role !== 'collector' && (
             <button
-              onClick={openQuickEdit}
+              onClick={() => {
+                setSelectedMemberId(member.id);
+                setActiveTab('member_form');
+              }}
               className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition cursor-pointer"
             >
               <Edit className="w-4 h-4 text-blue-600" />
-              <span>তথ্য সংশোধন (Quick Edit)</span>
+              <span>তথ্য সংশোধন (Edit)</span>
             </button>
           )}
 
@@ -268,20 +196,8 @@ export const MemberProfile: React.FC = () => {
             <span>{t('memberStatement')}</span>
           </button>
 
-          {currentUser.role !== 'collector' && (
-            <button
-              onClick={() => {
-                setSelectedMemberId(member.id);
-                setActiveTab('member_form');
-              }}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
-            >
-              <Edit className="w-4 h-4 text-slate-500" />
-              <span>পূর্ণাঙ্গ ফরম</span>
-            </button>
-          )}
+          </div>
         </div>
-      </div>
 
       {/* Member Header Profile Card */}
       <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-950 rounded-2xl p-6 text-white shadow-md relative overflow-hidden print-card">
@@ -981,270 +897,7 @@ export const MemberProfile: React.FC = () => {
         </div>
       )}
 
-      {/* Super Admin Quick Edit & Photo Update Modal */}
-      {isQuickEditOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto no-print">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200 space-y-5 my-8">
-            
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2.5 bg-blue-100 text-blue-700 rounded-2xl">
-                  <Edit className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
-                    সদস্য তথ্য সংশোধন (Super Admin Edit)
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    সদস্য ID: <span className="font-mono font-bold text-blue-700">{member.id}</span> ({member.nameBn})
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsQuickEditOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Quick Edit Form */}
-            <form onSubmit={handleSaveQuickEdit} className="space-y-4">
-              
-              {/* Photo & Quick Upload Row */}
-              <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <img
-                  src={editForm.photoUrl || member.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
-                  alt="Member Photo"
-                  className="w-16 h-16 rounded-2xl object-cover ring-2 ring-blue-500/30"
-                />
-                <div className="flex-1 space-y-1">
-                  <label className="block text-xs font-bold text-slate-800">
-                    সদস্যের ছবি (Photo)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => photoInputRef.current?.click()}
-                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-                    >
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>ডিভাইস থেকে ছবি আপলোড</span>
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="অথবা ছবি লিঙ্ক/URL দিন..."
-                    value={editForm.photoUrl}
-                    onChange={(e) => setEditForm({ ...editForm, photoUrl: e.target.value })}
-                    className="w-full text-xs bg-white border border-slate-300 rounded-xl px-3 py-1.5 outline-hidden focus:border-blue-500 mt-1"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Name Bangla */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    সদস্যের নাম (বাংলা) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editForm.nameBn}
-                    onChange={(e) => setEditForm({ ...editForm, nameBn: e.target.value })}
-                    className="w-full text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 outline-hidden focus:border-blue-500 focus:bg-white"
-                  />
-                </div>
-
-                {/* Name English */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    সদস্যের নাম (English)
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.nameEn}
-                    onChange={(e) => setEditForm({ ...editForm, nameEn: e.target.value })}
-                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 outline-hidden focus:border-blue-500 focus:bg-white"
-                  />
-                </div>
-
-                {/* Mobile */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    প্রাথমিক মোবাইল নম্বর *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editForm.mobile}
-                    onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })}
-                    className="w-full text-xs font-mono font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 outline-hidden focus:border-blue-500 focus:bg-white"
-                  />
-                </div>
-
-                {/* Alt Mobile */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    বিকল্প মোবাইল নম্বর
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.altMobile}
-                    onChange={(e) => setEditForm({ ...editForm, altMobile: e.target.value })}
-                    className="w-full text-xs font-mono bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 outline-hidden focus:border-blue-500 focus:bg-white"
-                  />
-                </div>
-
-                {/* NID */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    এনআইডি (NID) / জন্ম নিবন্ধন *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editForm.nid}
-                    onChange={(e) => setEditForm({ ...editForm, nid: e.target.value })}
-                    className="w-full text-xs font-mono font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 outline-hidden focus:border-blue-500 focus:bg-white"
-                  />
-                </div>
-
-                {/* Security PIN */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    সদস্য পোর্টাল ৪-ডিজিটের পিন (Security PIN)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      maxLength={8}
-                      value={editForm.pin}
-                      onChange={(e) => setEditForm({ ...editForm, pin: e.target.value })}
-                      className="w-full text-xs font-mono font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 outline-hidden focus:border-blue-500 focus:bg-white text-blue-700"
-                    />
-                    <KeyRound className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
-                  </div>
-                </div>
-
-                {/* Father's Name */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    পিতার নাম
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.fatherName}
-                    onChange={(e) => setEditForm({ ...editForm, fatherName: e.target.value })}
-                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 outline-hidden focus:border-blue-500 focus:bg-white"
-                  />
-                </div>
-
-                {/* Mother's Name */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    মাতার নাম
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.motherName}
-                    onChange={(e) => setEditForm({ ...editForm, motherName: e.target.value })}
-                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 outline-hidden focus:border-blue-500 focus:bg-white"
-                  />
-                </div>
-
-                {/* Status */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    সদস্যের অবস্থা (Status)
-                  </label>
-                  <select
-                    value={editForm.status}
-                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value as any })}
-                    className="w-full text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 outline-hidden focus:border-blue-500 focus:bg-white"
-                  >
-                    <option value="active">সক্রিয় (Active)</option>
-                    <option value="inactive">নিষ্ক্রিয় (Inactive)</option>
-                    <option value="pending">পেন্ডিং (Pending)</option>
-                  </select>
-                </div>
-                {/* Spouse Name */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">স্বামী / স্ত্রী নাম</label>
-                  <input type="text" value={editForm.spouseName} onChange={(e) => setEditForm({ ...editForm, spouseName: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
-                </div>
-                {/* DOB */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">জন্ম তারিখ</label>
-                  <input type="date" value={editForm.dob} onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
-                </div>
-                {/* Gender */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">লিঙ্গ</label>
-                  <select value={editForm.gender} onChange={(e) => setEditForm({ ...editForm, gender: e.target.value as any })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2">
-                    <option value="male">পুরুষ</option>
-                    <option value="female">মহিলা</option>
-                    <option value="other">অন্যান্য</option>
-                  </select>
-                </div>
-                {/* Birth Reg No */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">জন্ম নিবন্ধন নং</label>
-                  <input type="text" value={editForm.birthRegNo} onChange={(e) => setEditForm({ ...editForm, birthRegNo: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
-                </div>
-              </div>
-
-              {/* Present Address */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">বর্তমান ঠিকানা</label>
-                <input type="text" value={editForm.presentAddress} onChange={(e) => setEditForm({ ...editForm, presentAddress: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
-              </div>
-
-              {/* Permanent Address */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">স্থায়ী ঠিকানা</label>
-                <input type="text" value={editForm.permanentAddress} onChange={(e) => setEditForm({ ...editForm, permanentAddress: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
-              </div>
-              
-              {/* Nominee Details */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-100">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">নমিনির বর্তমান ঠিকানা</label>
-                  <input type="text" value={editForm.nomineeAddress} onChange={(e) => setEditForm({ ...editForm, nomineeAddress: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">নমিনির ফোন নম্বর</label>
-                  <input type="text" value={editForm.nomineePhone} onChange={(e) => setEditForm({ ...editForm, nomineePhone: e.target.value })} className="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2" />
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsQuickEditOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer flex items-center gap-1.5"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>সংশোধন সংরক্ষণ করুন</span>
-                </button>
-              </div>
-
-            </form>
-
-          </div>
-        </div>
-      )}
+      {/* Super Admin Quick Edit & Photo Update Modal (REMOVED) */}
 
     </div>
   );

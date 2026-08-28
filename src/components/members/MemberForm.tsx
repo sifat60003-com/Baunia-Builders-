@@ -44,7 +44,7 @@ export const MemberForm: React.FC = () => {
   const [fatherName, setFatherName] = useState(existingMember?.fatherName || '');
   const [motherName, setMotherName] = useState(existingMember?.motherName || '');
   const [spouseName, setSpouseName] = useState(existingMember?.spouseName || '');
-  const [dob, setDob] = useState(existingMember?.dob || '1985-01-01');
+  const [dob, setDob] = useState(existingMember?.dob ? existingMember.dob.split('-').reverse().join('-') : '1985-01-01');
   const [gender, setGender] = useState<Gender>(existingMember?.gender || 'male');
   const [nid, setNid] = useState(existingMember?.nid || '');
   const [birthRegNo, setBirthRegNo] = useState(existingMember?.birthRegNo || '');
@@ -194,7 +194,7 @@ export const MemberForm: React.FC = () => {
       fatherName: fatherName.trim(),
       motherName: motherName.trim(),
       spouseName: spouseName.trim() || undefined,
-      dob,
+      dob: dob.split('-').reverse().join('-'), // Convert back to YYYY-MM-DD for storage
       gender,
       nid: nid.trim(),
       birthRegNo: birthRegNo.trim() || undefined,
@@ -374,7 +374,8 @@ export const MemberForm: React.FC = () => {
                 জন্ম তারিখ
               </label>
               <input
-                type="date"
+                type="text"
+                placeholder="DD/MM/YYYY"
                 value={dob}
                 onChange={(e) => setDob(e.target.value)}
                 className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"
