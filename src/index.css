@@ -19,7 +19,47 @@
 @layer base {
   body {
     font-family: 'Kalpurush', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: 16px !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
+}
+
+/* 🌟 Increase readability and scale of Kalpurush Bengali text globally */
+.text-xs {
+  font-size: 0.85rem !important; /* Increase from 0.75rem to 0.85rem */
+  font-weight: 500 !important;   /* Slightly bolder for crisp rendering */
+}
+
+.text-sm {
+  font-size: 0.95rem !important; /* Increase from 0.875rem to 0.95rem */
+}
+
+/* Enhance contrast of gray texts so they don't look blurry or faint */
+.text-slate-500, .text-gray-500, .text-muted-foreground {
+  color: #334155 !important; /* Darker warm gray for higher contrast */
+}
+
+.text-slate-400, .text-gray-400 {
+  color: #475569 !important; /* Darker warm gray for higher contrast */
+}
+
+/* Sharper text inputs and buttons */
+input, select, textarea, button {
+  font-size: 0.95rem !important;
+}
+
+/* Table cells and headers readability */
+th {
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  color: #0f172a !important; /* Deep dark for maximum contrast */
+}
+
+td {
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
 }
 
 @media print {
