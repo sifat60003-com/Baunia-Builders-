@@ -478,8 +478,7 @@ export const MemberForm: React.FC = () => {
                 জন্ম তারিখ
               </label>
               <input
-                type="text"
-                placeholder="DD/MM/YYYY"
+                type="date"
                 value={dob}
                 onChange={(e) => setDob(e.target.value)}
                 className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"

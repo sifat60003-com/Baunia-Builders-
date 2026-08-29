@@ -422,6 +422,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
+  // Helper to extract table columns dynamically from a database row.
+  // Excludes nested JSON/array relations like 'nominees' but correctly preserves NULL columns (since typeof null === 'object')
+  const getTableColumns = (row: any): string[] => {
+    if (!row || typeof row !== 'object') return [];
+    return Object.keys(row).filter(key => {
+      const val = row[key];
+      if (val === null) return true;
+      if (Array.isArray(val)) return false;
+      if (typeof val === 'object') return false; // Filter out nested relations
+      return true;
+    });
+  };
+
   
   // Helpers for Supabase Mapping
   const mapSupabaseMember = (m: any): Member => {
@@ -619,7 +632,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // 3. Members
         const { data: membersData, error: mErr } = await supabase.from('members').select('*, nominees(*)');
         if (membersData && membersData.length > 0) {
-          membersColumnsRef.current = Object.keys(membersData[0]).filter(k => typeof membersData[0][k] !== 'object');
+          membersColumnsRef.current = getTableColumns(membersData[0]);
           const firstMem = membersData[0];
           if (firstMem.nominees && Array.isArray(firstMem.nominees) && firstMem.nominees.length > 0) {
             nomineesColumnsRef.current = Object.keys(firstMem.nominees[0]);
@@ -777,7 +790,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const { data: mems } = await supabase.from('members').select('*');
         if (mems) {
           if (mems.length > 0) {
-            membersColumnsRef.current = Object.keys(mems[0]).filter(k => typeof mems[0][k] !== 'object');
+            membersColumnsRef.current = getTableColumns(mems[0]);
           }
           setMembers(mems.map(mapSupabaseMember));
         }
@@ -872,7 +885,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const { data: mems } = await supabase.from('members').select('*');
         if (mems) {
           if (mems.length > 0) {
-            membersColumnsRef.current = Object.keys(mems[0]).filter(k => typeof mems[0][k] !== 'object');
+            membersColumnsRef.current = getTableColumns(mems[0]);
           }
           setMembers(mems.map(mapSupabaseMember));
         }
