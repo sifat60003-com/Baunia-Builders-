@@ -549,8 +549,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       try {
         setIsSupabaseLoading(true);
         
-        // 1. Settings
-        const { data: settingsData, error: sErr } = await supabase.from('settings').select('*').limit(1);
+        // 1. Settings (Support both 'settings' and 'organization_settings' tables)
+        let { data: settingsData, error: sErr } = await supabase.from('settings').select('*').limit(1);
+        if ((!settingsData || settingsData.length === 0) && !sErr) {
+          const { data: orgData } = await supabase.from('organization_settings').select('*').limit(1);
+          if (orgData && orgData.length > 0) {
+            settingsData = orgData;
+          }
+        }
         if (settingsData && settingsData.length > 0) {
           const s = settingsData[0];
           setSettings(prev => ({
@@ -614,8 +620,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           console.warn('Supabase members err:', mErr.message);
         }
 
-        // 4. Receipts
-        const { data: receiptsData, error: rErr } = await supabase.from('receipts').select('*');
+        // 4. Receipts (Support both 'receipts' and 'payment_receipts' tables)
+        let { data: receiptsData, error: rErr } = await supabase.from('receipts').select('*');
+        if ((!receiptsData || receiptsData.length === 0) && !rErr) {
+          const { data: pReceiptsData } = await supabase.from('payment_receipts').select('*');
+          if (pReceiptsData && pReceiptsData.length > 0) {
+            receiptsData = pReceiptsData;
+          }
+        }
         if (receiptsData && receiptsData.length > 0) {
           setReceipts(receiptsData.map(mapSupabaseReceipt));
         } else if (rErr) {
@@ -1119,6 +1131,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       supabase.from('members').update(supabasePayload).eq('id', id).then(async ({ error }) => {
         if (error) {
           console.error('Supabase update member error:', error);
+          showToast(`ডাটাবেজ আপডেট ব্যর্থ হয়েছে: ${error.message} (${error.code || ''})`, 'error');
+        } else {
+          showToast(t('successSaved'), 'success');
         }
 
         // Sync Nominees table in Supabase
@@ -1147,10 +1162,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
         refreshMembers();
       });
+    } else {
+      showToast(t('successSaved'), 'success');
     }
 
     addAuditLog('MEMBER_UPDATE', `সদস্য তথ্য আপডেট: ${id}`);
-    showToast(t('successSaved'), 'success');
   };
 
   const deleteMember = (id: string) => {
