@@ -32,7 +32,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
     toggleLanguage, 
     t, 
     currentUser, 
-    switchRole, 
     setIsAuthenticated,
     notifications, 
     markNotificationRead, 
@@ -42,12 +41,10 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
   } = useApp();
 
   const [showNotifMenu, setShowNotifMenu] = useState(false);
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
 
   const notifRef = useRef<HTMLDivElement>(null);
-  const roleRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
 
   // Close menus on outside click
@@ -55,9 +52,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
     const handleClickOutside = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setShowNotifMenu(false);
-      }
-      if (roleRef.current && !roleRef.current.contains(e.target as Node)) {
-        setShowRoleMenu(false);
       }
       if (userRef.current && !userRef.current.contains(e.target as Node)) {
         setShowUserMenu(false);
@@ -68,13 +62,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
   }, []);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
-
-  const roles: { key: UserRole; labelBn: string; labelEn: string; desc: string }[] = [
-    { key: 'super_admin', labelBn: 'সুপার অ্যাডমিন', labelEn: 'Super Admin', desc: 'পূর্ণ সিস্টেম ও আর্থিক নিয়ন্ত্রণ' },
-    { key: 'admin', labelBn: 'অ্যাডমিন', labelEn: 'Admin', desc: 'সদস্য, শেয়ার ও রসিদ ব্যবস্থাপনা' },
-    { key: 'collector', labelBn: 'হিসাবরক্ষক / কালেক্টর', labelEn: 'Accountant / Collector', desc: 'টাকা আদায় ও রসিদ তৈরি' },
-    { key: 'member', labelBn: 'সদস্য পোর্টাল', labelEn: 'Member Portal', desc: 'ব্যক্তিগত শেয়ার, জমা ও বকেয়া' },
-  ];
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs no-print">
@@ -151,51 +138,12 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
             </button>
           </div>
 
-          {/* Quick Role Switcher */}
-          <div className="relative" ref={roleRef}>
-            <button
-              onClick={() => setShowRoleMenu(prev => !prev)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 rounded-xl transition cursor-pointer"
-              title="Switch demo user role"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-              <span className="hidden sm:inline">
-                {language === 'bn' ? translations['bn'][currentUser.role] : translations['en'][currentUser.role]}
-              </span>
-              <ChevronDown className="w-3 h-3 opacity-60" />
-            </button>
-
-            {showRoleMenu && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
-                <div className="px-3 py-1.5 border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  {language === 'bn' ? 'ভূমিকা পরিবর্তন (Role Preview)' : 'Switch System Role'}
-                </div>
-                {roles.map(r => (
-                  <button
-                    key={r.key}
-                    onClick={() => {
-                      switchRole(r.key);
-                      setShowRoleMenu(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 flex items-start gap-2.5 text-xs hover:bg-blue-50 transition cursor-pointer ${
-                      currentUser.role === r.key ? 'bg-blue-50/70 text-blue-900 font-semibold' : 'text-slate-700'
-                    }`}
-                  >
-                    <div className={`mt-0.5 p-1 rounded-md ${currentUser.role === r.key ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                      <Check className={`w-3 h-3 ${currentUser.role === r.key ? 'opacity-100' : 'opacity-0'}`} />
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-900">
-                        {language === 'bn' ? r.labelBn : r.labelEn}
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        {r.desc}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Current User Role Badge (Read-Only Secure) */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-50 text-blue-900 border border-blue-200/80 rounded-xl">
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+            <span>
+              {language === 'bn' ? translations['bn'][currentUser.role] : translations['en'][currentUser.role]}
+            </span>
           </div>
 
           {/* Notifications Bell */}

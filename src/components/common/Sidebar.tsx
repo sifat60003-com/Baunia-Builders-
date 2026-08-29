@@ -42,7 +42,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     monthlyDues, 
     receipts,
     fdrs,
-    switchRole,
     setIsAuthenticated
   } = useApp();
 

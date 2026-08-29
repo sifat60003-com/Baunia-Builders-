@@ -25,7 +25,6 @@ export const UserManagement: React.FC = () => {
     updateUser, 
     deleteUser, 
     currentUser, 
-    setCurrentUser, 
     language, 
     t, 
     showToast 
@@ -166,7 +165,6 @@ export const UserManagement: React.FC = () => {
                 <th className="py-3 px-4">ইমেইল</th>
                 <th className="py-3 px-4">ভূমিকা (Role)</th>
                 <th className="py-3 px-4">স্ট্যাটাস</th>
-                <th className="py-3 px-4">সুইচ টেস্ট</th>
                 <th className="py-3 px-4 text-right">অ্যাকশন</th>
               </tr>
             </thead>
@@ -219,17 +217,6 @@ export const UserManagement: React.FC = () => {
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>সক্রিয়</span>
                     </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => {
-                        setCurrentUser(u);
-                        showToast(`ভূমিকা পরিবর্তিত: ${u.name} (${u.role})`, 'info');
-                      }}
-                      className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-bold text-[10px] rounded-lg transition cursor-pointer"
-                    >
-                      লগইন হিসেবে টেস্ট
-                    </button>
                   </td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-1">
