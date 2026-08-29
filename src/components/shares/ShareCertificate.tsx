@@ -61,36 +61,86 @@ export const ShareCertificate: React.FC = () => {
       {/* Dynamic Style block for Landscape A4 printing */}
       <style>{`
         @media print {
-          body {
+          html, body {
+            width: 297mm !important;
+            height: 210mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
             background-color: white !important;
             color: black !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            margin: 0 !important;
-            padding: 0 !important;
           }
           .no-print {
             display: none !important;
           }
           .print-card {
-            border-width: 8px !important;
-            border-color: #1e3a8a !important;
-            box-shadow: none !important;
-            margin: 0 auto !important;
-            padding: 0.4in !important;
-            width: 11.69in !important;
-            height: 8.27in !important;
-            border-style: double !important;
-            border-radius: 0 !important;
-            box-sizing: border-box !important;
-            page-break-inside: avoid !important;
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
+            width: 297mm !important;
+            height: 210mm !important;
+            margin: 0 !important;
+            padding: 0.25in !important;
+            box-sizing: border-box !important;
+            border-width: 6px !important;
+            border-color: #1e3a8a !important;
+            border-style: double !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            page-break-inside: avoid !important;
+            page-break-after: avoid !important;
+            overflow: hidden !important;
+            background-color: white !important;
+          }
+          /* Compact spacing and fonts inside printing */
+          .print-card .inner-frame {
+            padding: 0.12in !important;
+            margin: 0 !important;
+            height: 100% !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+          }
+          .print-card .inner-frame > * + * {
+            margin-top: 6px !important;
+          }
+          .print-card h1 {
+            font-size: 26px !important;
+            line-height: 1.1 !important;
+          }
+          /* Shrink photo heights and container padding in printing */
+          .print-card .photo-container {
+            width: 80px !important;
+            height: 100px !important;
+          }
+          .print-card .photo-label {
+            margin-top: 4px !important;
+            padding: 1px 4px !important;
+            font-size: 8px !important;
+          }
+          .print-card .right-panel-container {
+            padding: 8px !important;
+          }
+          .print-card .right-panel-container > * + * {
+            margin-top: 6px !important;
+          }
+          /* Shrink signature margin */
+          .print-card .signatures-row {
+            padding-top: 16px !important;
+          }
+          /* Shrink terms box padding and line heights */
+          .print-card .terms-box {
+            padding: 8px !important;
+          }
+          .print-card .terms-box ol > li {
+            margin-top: 2px !important;
           }
           @page {
-            size: 11.69in 8.27in landscape;
-            margin: 0;
+            size: A4 landscape;
+            margin: 0 !important;
           }
         }
       `}</style>
@@ -158,7 +208,7 @@ export const ShareCertificate: React.FC = () => {
         </div>
 
         {/* Certificate Inner Frame */}
-        <div className="border border-amber-600/40 p-6 sm:p-8 rounded-2xl relative z-10 space-y-6">
+        <div className="border border-amber-600/40 p-6 sm:p-8 rounded-2xl relative z-10 space-y-6 inner-frame">
           
           {/* Certificate Header Block */}
           <div className="grid grid-cols-12 gap-4 pb-4 border-b-2 border-blue-950 items-center">
@@ -209,10 +259,10 @@ export const ShareCertificate: React.FC = () => {
           </div>
 
           {/* Layout Content Grid: Left (Member info), Right (Photos & Nominee Details) */}
-          <div className="grid grid-cols-12 gap-6 items-start pt-2">
+          <div className="grid grid-cols-12 gap-6 items-start pt-2 print:grid-cols-12 print:gap-4">
             
             {/* Left Hand: Core Certification Text */}
-            <div className="col-span-12 lg:col-span-7 space-y-4 text-justify">
+            <div className="col-span-12 lg:col-span-7 print:col-span-7 space-y-4 text-justify print:space-y-2">
               <div className="text-slate-800 leading-relaxed text-sm font-semibold space-y-3">
                 <p>
                   এই মর্মে প্রত্যয়ন করা যাইতেছে যে, সম্মানিত সদস্য জনাব/জনাবা{' '}
@@ -238,13 +288,13 @@ export const ShareCertificate: React.FC = () => {
             </div>
 
             {/* Right Hand: Photos and Nominee Details Box */}
-            <div className="col-span-12 lg:col-span-5 bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 space-y-4">
+            <div className="col-span-12 lg:col-span-5 print:col-span-5 bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 space-y-4 right-panel-container">
               
               {/* Photos Panel */}
               <div className="grid grid-cols-2 gap-4">
                 {/* Member Photo */}
                 <div className="flex flex-col items-center">
-                  <div className="w-24 h-28 bg-white border-2 border-blue-900 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs shrink-0">
+                  <div className="w-24 h-28 bg-white border-2 border-blue-900 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs shrink-0 photo-container">
                     {member.member_photo ? (
                       <img
                         src={member.member_photo}
@@ -258,14 +308,14 @@ export const ShareCertificate: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <span className="text-[10px] font-bold text-blue-950 mt-1.5 uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                  <span className="text-[10px] font-bold text-blue-950 mt-1.5 uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 photo-label">
                     সদস্যের ছবি
                   </span>
                 </div>
 
                 {/* Nominee Photo */}
                 <div className="flex flex-col items-center">
-                  <div className="w-24 h-28 bg-white border-2 border-emerald-800 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs shrink-0">
+                  <div className="w-24 h-28 bg-white border-2 border-emerald-800 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs shrink-0 photo-container">
                     {primaryNominee.photoUrl ? (
                       <img
                         src={primaryNominee.photoUrl}
@@ -279,7 +329,7 @@ export const ShareCertificate: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-800 mt-1.5 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  <span className="text-[10px] font-bold text-emerald-800 mt-1.5 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 photo-label">
                     নমিনির ছবি
                   </span>
                 </div>
@@ -331,7 +381,7 @@ export const ShareCertificate: React.FC = () => {
           </div>
 
           {/* Legal / Rules Box - Requested Terms and Conditions */}
-          <div className="p-4 bg-slate-50 border border-slate-250 rounded-xl space-y-2 text-xs text-slate-800">
+          <div className="p-4 bg-slate-50 border border-slate-250 rounded-xl space-y-2 text-xs text-slate-800 terms-box">
             <div className="font-extrabold text-blue-950 uppercase tracking-wider pb-1 border-b border-slate-200/80 flex items-center gap-1.5">
               <FileText className="w-4 h-4 text-amber-600" />
               <span>বিশেষ শর্তাবলী ও নীতিমালা (Terms & Conditions)</span>
@@ -350,7 +400,7 @@ export const ShareCertificate: React.FC = () => {
           </div>
 
           {/* Official Signatures Row */}
-          <div className="pt-12 grid grid-cols-3 text-center text-[11px] font-bold text-slate-800">
+          <div className="pt-12 grid grid-cols-3 text-center text-[11px] font-bold text-slate-800 signatures-row">
             <div>
               <div className="font-serif italic text-blue-900 text-xs mb-1">{settings.presidentName || 'মো: ফয়েজুর রহমান খান'}</div>
               <div className="border-t-2 border-slate-800 pt-1 w-32 mx-auto">
