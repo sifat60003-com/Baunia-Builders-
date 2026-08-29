@@ -84,45 +84,91 @@ export const MemberForm: React.FC = () => {
         ]
   );
 
-  // Sync state when existingMember or selectedMemberId changes
+  // Use a ref to track the last initialized member ID to prevent resetting state during periodic polling
+  const lastInitializedIdRef = React.useRef<string | null>(null);
+
+  // Sync state when existingMember or selectedMemberId changes (runs once per member ID)
   useEffect(() => {
-    if (existingMember) {
-      setNameBn(existingMember.nameBn || '');
-      setNameEn(existingMember.nameEn || '');
-      setFatherName(existingMember.fatherName || '');
-      setMotherName(existingMember.motherName || '');
-      setSpouseName(existingMember.spouseName || '');
-      setDob(existingMember.dob || '1985-01-01');
-      setGender((existingMember.gender as Gender) || 'male');
-      setNid(existingMember.nid || '');
-      setBirthRegNo(existingMember.birthRegNo || '');
-      setMobile(existingMember.mobile || '');
-      setAltMobile(existingMember.altMobile || '');
-      setEmail(existingMember.email || '');
-      setOccupation(existingMember.occupation || 'ব্যবসায়ী');
-      setPresentAddress(existingMember.presentAddress || 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০');
-      setPermanentAddress(existingMember.permanentAddress || 'বাউনিয়া, তুরাগ, ঢাকা');
-      setPhotoUrl(existingMember.photoUrl || '');
-      setPhotoBackUrl(existingMember.photoBackUrl || '');
-      setPin(existingMember.pin || '');
-      setJoinDate(existingMember.joinDate || new Date().toISOString().split('T')[0]);
-      setStatus(existingMember.status || 'active');
-      setShareQty(existingMember.shareQty || 1);
-      setSharePrice(existingMember.sharePrice || settings.defaultSharePrice || 100000);
-      setMonthlyFee(existingMember.monthlyFee || settings.defaultMonthlyFee || 1000);
-      setOpeningBalance(existingMember.openingBalance || 0);
-      setNotes(existingMember.notes || '');
-      if (existingMember.nominees && existingMember.nominees.length > 0) {
-        setNominees(existingMember.nominees);
-      } else {
+    if (selectedMemberId && existingMember) {
+      if (lastInitializedIdRef.current !== selectedMemberId) {
+        lastInitializedIdRef.current = selectedMemberId;
+        setNameBn(existingMember.nameBn || '');
+        setNameEn(existingMember.nameEn || '');
+        setFatherName(existingMember.fatherName || '');
+        setMotherName(existingMember.motherName || '');
+        setSpouseName(existingMember.spouseName || '');
+        setDob(existingMember.dob || '1985-01-01');
+        setGender((existingMember.gender as Gender) || 'male');
+        setNid(existingMember.nid || '');
+        setBirthRegNo(existingMember.birthRegNo || '');
+        setMobile(existingMember.mobile || '');
+        setAltMobile(existingMember.altMobile || '');
+        setEmail(existingMember.email || '');
+        setOccupation(existingMember.occupation || 'ব্যবসায়ী');
+        setPresentAddress(existingMember.presentAddress || 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০');
+        setPermanentAddress(existingMember.permanentAddress || 'বাউনিয়া, তুরাগ, ঢাকা');
+        setPhotoUrl(existingMember.photoUrl || '');
+        setPhotoBackUrl(existingMember.photoBackUrl || '');
+        setPin(existingMember.pin || '');
+        setJoinDate(existingMember.joinDate || new Date().toISOString().split('T')[0]);
+        setStatus(existingMember.status || 'active');
+        setShareQty(existingMember.shareQty || 1);
+        setSharePrice(existingMember.sharePrice || settings.defaultSharePrice || 100000);
+        setMonthlyFee(existingMember.monthlyFee || settings.defaultMonthlyFee || 1000);
+        setOpeningBalance(existingMember.openingBalance || 0);
+        setNotes(existingMember.notes || '');
+        if (existingMember.nominees && existingMember.nominees.length > 0) {
+          setNominees(existingMember.nominees);
+        } else {
+          setNominees([
+            {
+              id: `NOM-${existingMember.id}-1`,
+              name: '',
+              relation: 'স্ত্রী',
+              nidBirthReg: '',
+              mobile: '',
+              address: existingMember.presentAddress || 'বাউনিয়া, তুরাগ, ঢাকা',
+              percentage: 100,
+            },
+          ]);
+        }
+      }
+    } else if (!selectedMemberId) {
+      if (lastInitializedIdRef.current !== null) {
+        lastInitializedIdRef.current = null;
+        setNameBn('');
+        setNameEn('');
+        setFatherName('');
+        setMotherName('');
+        setSpouseName('');
+        setDob('1985-01-01');
+        setGender('male');
+        setNid('');
+        setBirthRegNo('');
+        setMobile('');
+        setAltMobile('');
+        setEmail('');
+        setOccupation('');
+        setPresentAddress('বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০');
+        setPermanentAddress('বাউনিয়া, তুরাগ, ঢাকা');
+        setPhotoUrl('');
+        setPhotoBackUrl('');
+        setPin('');
+        setJoinDate(new Date().toISOString().split('T')[0]);
+        setStatus('active');
+        setShareQty(1);
+        setSharePrice(settings.defaultSharePrice || 100000);
+        setMonthlyFee(settings.defaultMonthlyFee || 1000);
+        setOpeningBalance(20000);
+        setNotes('');
         setNominees([
           {
-            id: `NOM-${existingMember.id}-1`,
+            id: 'NOM-1',
             name: '',
             relation: 'স্ত্রী',
             nidBirthReg: '',
             mobile: '',
-            address: existingMember.presentAddress || 'বাউনিয়া, তুরাগ, ঢাকা',
+            address: 'বাউনিয়া, তুরাগ, ঢাকা',
             percentage: 100,
           },
         ]);
