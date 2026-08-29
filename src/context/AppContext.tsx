@@ -15,7 +15,8 @@ import {
   UserRole,
   PaymentType,
   PaymentMethod,
-  FdrItem
+  FdrItem,
+  Gender
 } from '../types';
 import { 
   initialSettings, 
@@ -202,9 +203,21 @@ const getInitialAuthSession = (usersList: User[]) => {
     const stored = localStorage.getItem(AUTH_SESSION_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (parsed && parsed.isAuthenticated && parsed.userId) {
-        const foundUser = usersList.find(u => u.id === parsed.userId) || usersList.find(u => u.role === parsed.role) || usersList[0];
-        return { isAuthenticated: true, user: foundUser };
+      if (parsed && parsed.isAuthenticated) {
+        let foundUser: User | undefined;
+        if (parsed.userId) {
+          foundUser = usersList.find(u => u.id === parsed.userId);
+        }
+        if (!foundUser && (parsed.role || parsed.activeRole)) {
+          const targetRole = parsed.role || parsed.activeRole;
+          foundUser = usersList.find(u => u.role === targetRole);
+        }
+        if (!foundUser && parsed.user && parsed.user.id) {
+          foundUser = parsed.user as User;
+        }
+        if (foundUser) {
+          return { isAuthenticated: true, user: foundUser };
+        }
       }
     }
   } catch (e) {
@@ -330,17 +343,43 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const setIsAuthenticated = (auth: boolean) => {
     setIsAuthenticatedState(auth);
-    if (auth) {
-      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ isAuthenticated: true, userId: currentUser.id, role: currentUser.role }));
-    } else {
-      localStorage.removeItem(AUTH_SESSION_KEY);
+    try {
+      if (auth) {
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({
+          isAuthenticated: true,
+          userId: currentUser.id,
+          role: currentUser.role,
+          user: currentUser
+        }));
+      } else {
+        localStorage.removeItem(AUTH_SESSION_KEY);
+      }
+    } catch (e) {
+      console.error('Failed to update auth in localStorage:', e);
     }
   };
 
   const setCurrentUser = (user: User) => {
     setCurrentUserState(user);
-    if (isAuthenticated) {
-      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ isAuthenticated: true, userId: user.id, role: user.role }));
+    try {
+      const stored = localStorage.getItem(AUTH_SESSION_KEY);
+      let isAuth = true;
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.isAuthenticated !== undefined) {
+            isAuth = parsed.isAuthenticated;
+          }
+        } catch (e) {}
+      }
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({
+        isAuthenticated: isAuth,
+        userId: user.id,
+        role: user.role,
+        user: user
+      }));
+    } catch (e) {
+      console.error('Failed to update current user session:', e);
     }
   };
   const [users, setUsers] = useState<User[]>(initialData.users);
@@ -385,15 +424,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const shareQty = m.share_qty || 1;
     const calculatedDue = shareQty * 25000;
     
-    const nominees = m.nominees ? m.nominees.map((n: any) => ({
-      id: n.id,
-      name: n.name,
-      relation: n.relation || 'নমিনী',
-      nidBirthReg: n.nid_birth_reg,
-      mobile: n.mobile,
-      address: n.address || '',
-      percentage: Number(n.percentage) || 0
-    })) : [];
+    const nominees = m.nominees && Array.isArray(m.nominees) && m.nominees.length > 0
+      ? m.nominees.map((n: any) => ({
+          id: n.id || `NOM-${m.id}-${Math.random().toString(36).substring(2, 7)}`,
+          name: n.name || '',
+          relation: n.relation || 'নমিনী',
+          nidBirthReg: n.nid_birth_reg || '',
+          mobile: n.mobile || '',
+          address: n.address || '',
+          percentage: Number(n.percentage) || 0,
+          photoUrl: n.photo_url || undefined,
+        }))
+      : (m.nominee_name ? [{
+          id: `NOM-${m.id}-1`,
+          name: m.nominee_name || '',
+          relation: m.nominee_relation || 'নমিনী',
+          nidBirthReg: m.nominee_nid || '',
+          mobile: m.mobile || '',
+          address: m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
+          percentage: Number(m.nominee_share_percent) || 100,
+        }] : []);
+
+    const rawGender = String(m.gender || '').toLowerCase().trim();
+    const gender: Gender = rawGender === 'female' || rawGender === 'মহিলা' ? 'female' : rawGender === 'other' || rawGender === 'অন্যান্য' ? 'other' : 'male';
 
     return {
       id: m.id,
@@ -402,8 +455,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       nameEn: m.name_en || `Member ${m.member_no}`,
       fatherName: m.father_name || '—',
       motherName: m.mother_name || '—',
+      spouseName: m.spouse_name || '',
       mobile: m.mobile || '',
       altMobile: m.alt_mobile || '',
+      email: m.email || '',
       occupation: m.occupation || 'ব্যবসায়ী',
       presentAddress: m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
       permanentAddress: m.permanent_address || 'বাউনিয়া, তুরাগ, ঢাকা',
@@ -415,9 +470,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       openingBalance: Number(m.opening_balance || 0),
       createdAt: m.created_at || '2026-01-01',
       updatedAt: m.updated_at || new Date().toISOString(),
-      gender: m.gender || 'male',
+      gender: gender,
       dob: m.birth_date || m.dob || '1990-01-01',
       nid: m.nid || '',
+      birthRegNo: m.birth_reg_no || '',
       photoUrl: m.photo_url || m.photoUrl,
       photoBackUrl: m.photo_back_url || m.photoBackUrl,
       pin: m.pin || undefined,
@@ -425,6 +481,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       monthlyFee: 2000,
       currentDeposit: Number(m.opening_balance || 0),
       currentDue: m.current_due !== undefined && m.current_due !== null ? Number(m.current_due) : calculatedDue,
+      notes: m.notes || '',
       nominees: nominees,
     };
   };
@@ -515,7 +572,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // 2. Users
         const { data: usersData, error: uErr } = await supabase.from('users').select('*');
         if (usersData && usersData.length > 0) {
-          setUsers(usersData.map(u => ({
+          const loadedUsers = usersData.map(u => ({
             id: u.id,
             name: u.name,
             email: u.email,
@@ -525,7 +582,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             lastLogin: u.last_login,
             createdAt: u.created_at,
             avatar: u.avatar || u.avatar_url || ''
-          })));
+          }));
+          setUsers(loadedUsers);
+
+          // Synchronize currentUser from persisted session with freshly loaded Supabase users
+          try {
+            const stored = localStorage.getItem(AUTH_SESSION_KEY);
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              if (parsed && (parsed.userId || parsed.role)) {
+                const targetRole = parsed.role || parsed.activeRole;
+                const matchedUser = (parsed.userId && loadedUsers.find(u => u.id === parsed.userId))
+                  || (targetRole && loadedUsers.find(u => u.role === targetRole));
+                if (matchedUser) {
+                  setCurrentUserState(matchedUser);
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Failed to sync auth session with Supabase users:', e);
+          }
         } else if (uErr) {
           console.warn('Supabase users err:', uErr.message);
         }
@@ -896,34 +972,63 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     setMembers(prev => [newMember, ...prev]);
     // Sync to Supabase
-    supabase.from('members').insert([{
-      id: newMember.id,
-      member_no: newMember.memberNo,
-      name_bn: newMember.nameBn,
-      name_en: newMember.nameEn,
-      father_name: newMember.fatherName,
-      mother_name: newMember.motherName,
-      mobile: newMember.mobile,
-      alt_mobile: newMember.altMobile,
-      nid: newMember.nid,
-      occupation: newMember.occupation,
-      present_address: newMember.presentAddress,
-      permanent_address: newMember.permanentAddress,
-      photo_url: newMember.photoUrl,
-      photo_back_url: newMember.photoBackUrl,
-      pin: newMember.pin,
-      is_pin_set: newMember.isPinSet || false,
-      join_date: newMember.joinDate,
-      status: newMember.status,
-      share_qty: newMember.shareQty,
-      share_price: newMember.sharePrice,
-      total_share_value: newMember.totalShareValue,
-      opening_balance: newMember.openingBalance,
-      created_at: newMember.createdAt,
-      updated_at: newMember.updatedAt
-    }]).then(({error}) => {
-      if(error) console.error('Supabase insert member error:', error);
-    });
+    if (isSupabaseConfigured()) {
+      supabase.from('members').insert([{
+        id: newMember.id,
+        member_no: newMember.memberNo,
+        name_bn: newMember.nameBn,
+        name_en: newMember.nameEn || '',
+        father_name: newMember.fatherName || '',
+        mother_name: newMember.motherName || '',
+        spouse_name: newMember.spouseName || '',
+        birth_date: newMember.dob || '1990-01-01',
+        gender: newMember.gender || 'male',
+        nid: newMember.nid || '',
+        birth_reg_no: newMember.birthRegNo || '',
+        mobile: newMember.mobile,
+        alt_mobile: newMember.altMobile || '',
+        email: newMember.email || '',
+        occupation: newMember.occupation || 'ব্যবসায়ী',
+        present_address: newMember.presentAddress || 'বাউনিয়া, তুরাগ, ঢাকা',
+        permanent_address: newMember.permanentAddress || 'বাউনিয়া, তুরাগ, ঢাকা',
+        photo_url: newMember.photoUrl || '',
+        photo_back_url: newMember.photoBackUrl || '',
+        pin: newMember.pin || '',
+        is_pin_set: newMember.isPinSet || false,
+        join_date: newMember.joinDate || now,
+        status: newMember.status || 'active',
+        share_qty: newMember.shareQty || 1,
+        share_price: newMember.sharePrice || 100000,
+        total_share_value: newMember.totalShareValue || 100000,
+        opening_balance: newMember.openingBalance || 0,
+        notes: newMember.notes || '',
+        created_at: newMember.createdAt,
+        updated_at: newMember.updatedAt
+      }]).then(async ({ error }) => {
+        if (error) {
+          console.error('Supabase insert member error:', error);
+        } else {
+          // Insert Nominees into nominees table
+          if (newMember.nominees && newMember.nominees.length > 0) {
+            const nomineeRows = newMember.nominees.map(n => ({
+              id: n.id && !n.id.startsWith('NOM-') ? n.id : `NOM-${newMember.id}-${Math.random().toString(36).substring(2, 7)}`,
+              member_id: newMember.id,
+              name: n.name || '',
+              relation: n.relation || 'নমিনী',
+              nid_birth_reg: n.nidBirthReg || '',
+              mobile: n.mobile || '',
+              address: n.address || '',
+              percentage: Number(n.percentage) || 0,
+              photo_url: n.photoUrl || null,
+              created_at: new Date().toISOString()
+            }));
+            const { error: nomErr } = await supabase.from('nominees').insert(nomineeRows);
+            if (nomErr) console.error('Supabase insert nominees error:', nomErr);
+          }
+          refreshMembers();
+        }
+      });
+    }
 
     // Create Initial Share Transaction
     if (newMember.shareQty > 0) {
@@ -987,29 +1092,60 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (memberData.nameEn !== undefined) supabasePayload.name_en = memberData.nameEn;
       if (memberData.fatherName !== undefined) supabasePayload.father_name = memberData.fatherName;
       if (memberData.motherName !== undefined) supabasePayload.mother_name = memberData.motherName;
+      if (memberData.spouseName !== undefined) supabasePayload.spouse_name = memberData.spouseName;
+      if (memberData.dob !== undefined) supabasePayload.birth_date = memberData.dob;
+      if (memberData.gender !== undefined) supabasePayload.gender = memberData.gender;
+      if (memberData.nid !== undefined) supabasePayload.nid = memberData.nid;
+      if (memberData.birthRegNo !== undefined) supabasePayload.birth_reg_no = memberData.birthRegNo;
       if (memberData.mobile !== undefined) supabasePayload.mobile = memberData.mobile;
       if (memberData.altMobile !== undefined) supabasePayload.alt_mobile = memberData.altMobile;
-      if (memberData.nid !== undefined) supabasePayload.nid = memberData.nid;
+      if (memberData.email !== undefined) supabasePayload.email = memberData.email;
+      if (memberData.occupation !== undefined) supabasePayload.occupation = memberData.occupation;
+      if (memberData.presentAddress !== undefined) supabasePayload.present_address = memberData.presentAddress;
+      if (memberData.permanentAddress !== undefined) supabasePayload.permanent_address = memberData.permanentAddress;
       if (memberData.photoUrl !== undefined) supabasePayload.photo_url = memberData.photoUrl;
       if (memberData.photoBackUrl !== undefined) supabasePayload.photo_back_url = memberData.photoBackUrl;
       if (memberData.pin !== undefined) supabasePayload.pin = memberData.pin;
       if (memberData.isPinSet !== undefined) supabasePayload.is_pin_set = memberData.isPinSet;
+      if (memberData.joinDate !== undefined) supabasePayload.join_date = memberData.joinDate;
       if (memberData.status !== undefined) supabasePayload.status = memberData.status;
       if (memberData.shareQty !== undefined) supabasePayload.share_qty = memberData.shareQty;
       if (memberData.sharePrice !== undefined) supabasePayload.share_price = memberData.sharePrice;
       if (memberData.openingBalance !== undefined) supabasePayload.opening_balance = memberData.openingBalance;
       if (memberData.currentDue !== undefined) supabasePayload.current_due = memberData.currentDue;
-      if (memberData.presentAddress !== undefined) supabasePayload.present_address = memberData.presentAddress;
-      if (memberData.permanentAddress !== undefined) supabasePayload.permanent_address = memberData.permanentAddress;
-      if (memberData.spouseName !== undefined) supabasePayload.spouse_name = memberData.spouseName;
-      if (memberData.dob !== undefined) supabasePayload.birth_date = memberData.dob;
-      if (memberData.gender !== undefined) supabasePayload.gender = memberData.gender;
-      if (memberData.birthRegNo !== undefined) supabasePayload.birth_reg_no = memberData.birthRegNo;
+      if (memberData.notes !== undefined) supabasePayload.notes = memberData.notes;
       supabasePayload.updated_at = new Date().toISOString();
 
-      supabase.from('members').update(supabasePayload).eq('id', id).then(({ error }) => {
-        if (error) console.error('Supabase update member error:', error);
-        else refreshMembers();
+      supabase.from('members').update(supabasePayload).eq('id', id).then(async ({ error }) => {
+        if (error) {
+          console.error('Supabase update member error:', error);
+        }
+
+        // Sync Nominees table in Supabase
+        if (memberData.nominees !== undefined) {
+          try {
+            await supabase.from('nominees').delete().eq('member_id', id);
+            if (memberData.nominees.length > 0) {
+              const nomineeRows = memberData.nominees.map(n => ({
+                id: n.id && !n.id.startsWith('NOM-') ? n.id : `NOM-${id}-${Math.random().toString(36).substring(2, 7)}`,
+                member_id: id,
+                name: n.name || '',
+                relation: n.relation || 'নমিনী',
+                nid_birth_reg: n.nidBirthReg || '',
+                mobile: n.mobile || '',
+                address: n.address || '',
+                percentage: Number(n.percentage) || 0,
+                photo_url: n.photoUrl || null,
+                created_at: new Date().toISOString()
+              }));
+              const { error: nomErr } = await supabase.from('nominees').insert(nomineeRows);
+              if (nomErr) console.error('Supabase insert nominees error:', nomErr);
+            }
+          } catch (e) {
+            console.error('Error updating nominees in Supabase:', e);
+          }
+        }
+        refreshMembers();
       });
     }
 
@@ -1021,8 +1157,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const target = members.find(m => m.id === id);
     setMembers(prev => prev.filter(m => m.id !== id));
     if (isSupabaseConfigured()) {
-      supabase.from('members').delete().eq('id', id).then(({error}) => {
-        if (error) console.error('Supabase delete member err:', error);
+      supabase.from('nominees').delete().eq('member_id', id).then(() => {
+        supabase.from('members').delete().eq('id', id).then(({error}) => {
+          if (error) console.error('Supabase delete member err:', error);
+          refreshMembers();
+        });
       });
     }
     addAuditLog('MEMBER_DELETE', `সদস্য মুছে ফেলা হয়েছে: ${target?.nameBn || id}`);
@@ -1542,7 +1681,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateUser = (id: string, updates: Partial<User>) => {
     setUsers(prev => prev.map(u => (u.id === id ? { ...u, ...updates } : u)));
     if (currentUser.id === id) {
-      setCurrentUserState(prev => ({ ...prev, ...updates }));
+      const updatedUser = { ...currentUser, ...updates };
+      setCurrentUserState(updatedUser);
+      try {
+        const stored = localStorage.getItem(AUTH_SESSION_KEY);
+        const isAuth = stored ? JSON.parse(stored).isAuthenticated : isAuthenticated;
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({
+          isAuthenticated: isAuth,
+          userId: updatedUser.id,
+          role: updatedUser.role,
+          user: updatedUser
+        }));
+      } catch (e) {}
     }
 
     if (isSupabaseConfigured()) {
@@ -1607,8 +1757,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           updated_at: m.updatedAt || new Date().toISOString()
         }));
         const { error: mErr } = await supabase.from('members').upsert(memberPayload);
-        if (mErr) errors.push(`সদস্য: ${mErr.message}`);
-        else totalCount += members.length;
+        if (mErr) {
+          errors.push(`সদস্য: ${mErr.message}`);
+        } else {
+          totalCount += members.length;
+          // Sync all nominees
+          const allNomineeRows: any[] = [];
+          members.forEach(m => {
+            if (m.nominees && m.nominees.length > 0) {
+              m.nominees.forEach((n, idx) => {
+                allNomineeRows.push({
+                  id: n.id && !n.id.startsWith('NOM-') ? n.id : `NOM-${m.id}-${idx + 1}`,
+                  member_id: m.id,
+                  name: n.name || '',
+                  relation: n.relation || 'নমিনী',
+                  nid_birth_reg: n.nidBirthReg || '',
+                  mobile: n.mobile || '',
+                  address: n.address || '',
+                  percentage: Number(n.percentage) || 0,
+                  photo_url: n.photoUrl || null,
+                  created_at: new Date().toISOString()
+                });
+              });
+            }
+          });
+          if (allNomineeRows.length > 0) {
+            const { error: nomErr } = await supabase.from('nominees').upsert(allNomineeRows);
+            if (nomErr) errors.push(`নমিনী: ${nomErr.message}`);
+          }
+        }
       } catch (err: any) {
         errors.push(`সদস্য: ${err.message}`);
       }

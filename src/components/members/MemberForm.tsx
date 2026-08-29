@@ -44,7 +44,7 @@ export const MemberForm: React.FC = () => {
   const [fatherName, setFatherName] = useState(existingMember?.fatherName || '');
   const [motherName, setMotherName] = useState(existingMember?.motherName || '');
   const [spouseName, setSpouseName] = useState(existingMember?.spouseName || '');
-  const [dob, setDob] = useState(existingMember?.dob ? existingMember.dob.split('-').reverse().join('-') : '1985-01-01');
+  const [dob, setDob] = useState(existingMember?.dob || '1985-01-01');
   const [gender, setGender] = useState<Gender>(existingMember?.gender || 'male');
   const [nid, setNid] = useState(existingMember?.nid || '');
   const [birthRegNo, setBirthRegNo] = useState(existingMember?.birthRegNo || '');
@@ -83,6 +83,52 @@ export const MemberForm: React.FC = () => {
           },
         ]
   );
+
+  // Sync state when existingMember or selectedMemberId changes
+  useEffect(() => {
+    if (existingMember) {
+      setNameBn(existingMember.nameBn || '');
+      setNameEn(existingMember.nameEn || '');
+      setFatherName(existingMember.fatherName || '');
+      setMotherName(existingMember.motherName || '');
+      setSpouseName(existingMember.spouseName || '');
+      setDob(existingMember.dob || '1985-01-01');
+      setGender((existingMember.gender as Gender) || 'male');
+      setNid(existingMember.nid || '');
+      setBirthRegNo(existingMember.birthRegNo || '');
+      setMobile(existingMember.mobile || '');
+      setAltMobile(existingMember.altMobile || '');
+      setEmail(existingMember.email || '');
+      setOccupation(existingMember.occupation || 'ব্যবসায়ী');
+      setPresentAddress(existingMember.presentAddress || 'বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০');
+      setPermanentAddress(existingMember.permanentAddress || 'বাউনিয়া, তুরাগ, ঢাকা');
+      setPhotoUrl(existingMember.photoUrl || '');
+      setPhotoBackUrl(existingMember.photoBackUrl || '');
+      setPin(existingMember.pin || '');
+      setJoinDate(existingMember.joinDate || new Date().toISOString().split('T')[0]);
+      setStatus(existingMember.status || 'active');
+      setShareQty(existingMember.shareQty || 1);
+      setSharePrice(existingMember.sharePrice || settings.defaultSharePrice || 100000);
+      setMonthlyFee(existingMember.monthlyFee || settings.defaultMonthlyFee || 1000);
+      setOpeningBalance(existingMember.openingBalance || 0);
+      setNotes(existingMember.notes || '');
+      if (existingMember.nominees && existingMember.nominees.length > 0) {
+        setNominees(existingMember.nominees);
+      } else {
+        setNominees([
+          {
+            id: `NOM-${existingMember.id}-1`,
+            name: '',
+            relation: 'স্ত্রী',
+            nidBirthReg: '',
+            mobile: '',
+            address: existingMember.presentAddress || 'বাউনিয়া, তুরাগ, ঢাকা',
+            percentage: 100,
+          },
+        ]);
+      }
+    }
+  }, [existingMember, selectedMemberId, settings.defaultSharePrice, settings.defaultMonthlyFee]);
 
   // Auto calculate total share value
   const totalShareValue = shareQty * sharePrice;
@@ -186,14 +232,30 @@ export const MemberForm: React.FC = () => {
       return;
     }
 
+    // Normalize dob for storage
+    const normalizeDateForStorage = (d: string) => {
+      if (!d) return '1985-01-01';
+      const clean = d.trim().replace(/\//g, '-');
+      const parts = clean.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+        }
+        if (parts[2].length === 4) {
+          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+      }
+      return d;
+    };
+
     const memberPayload = {
       nameBn: nameBn.trim(),
       nameEn: nameEn.trim(),
       fatherName: fatherName.trim(),
       motherName: motherName.trim(),
       spouseName: spouseName.trim() || undefined,
-      dob: dob.split('-').reverse().join('-'), // Convert back to YYYY-MM-DD for storage
-      gender,
+      dob: normalizeDateForStorage(dob),
+      gender: (gender as Gender) || 'male',
       nid: nid.trim(),
       birthRegNo: birthRegNo.trim() || undefined,
       mobile: mobile.trim(),

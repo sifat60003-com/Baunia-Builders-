@@ -101,6 +101,11 @@ export const translations = {
     partial: 'আংশিক পরিশোধ',
     unpaid: 'অপরিশোধিত',
 
+    // Gender
+    male: 'পুরুষ',
+    female: 'মহিলা',
+    gender_other: 'অন্যান্য',
+
     // Payment Types
     monthly_fee: 'মাসিক চাঁদা / ফি',
     share_payment: 'শেয়ার বাবদ জমা',
@@ -249,6 +254,11 @@ export const translations = {
     paid: 'Paid',
     partial: 'Partial',
     unpaid: 'Unpaid',
+
+    // Gender
+    male: 'Male',
+    female: 'Female',
+    gender_other: 'Other',
 
     // Payment Types
     monthly_fee: 'Monthly Fee',

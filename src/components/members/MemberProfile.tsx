@@ -558,7 +558,9 @@ export const MemberProfile: React.FC = () => {
               </div>
               <div>
                 <span className="text-slate-400 block mb-0.5">লিঙ্গ:</span>
-                <span className="font-bold text-slate-900">{translations[language][member.gender]}</span>
+                <span className="font-bold text-slate-900">
+                  {translations[language][member.gender] || (member.gender === 'female' ? (language === 'bn' ? 'মহিলা' : 'Female') : member.gender === 'other' ? (language === 'bn' ? 'অন্যান্য' : 'Other') : (language === 'bn' ? 'পুরুষ' : 'Male'))}
+                </span>
               </div>
             </div>
           </div>

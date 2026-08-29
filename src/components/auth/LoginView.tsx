@@ -33,6 +33,14 @@ export const LoginView: React.FC<LoginViewProps> = ({ onBack }) => {
       if (user && cleanPass === cleanUser) {
         setCurrentUser(user);
         setIsAuthenticated(true);
+        try {
+          localStorage.setItem('BAUNIA_BUILDERS_AUTH_SESSION_V2', JSON.stringify({
+            isAuthenticated: true,
+            userId: user.id,
+            role: user.role,
+            user: user
+          }));
+        } catch (e) {}
         showToast('লগইন সফল হয়েছে!', 'success');
       } else {
         showToast('ভুল ইউজার আইডি বা পাসওয়ার্ড', 'error');
