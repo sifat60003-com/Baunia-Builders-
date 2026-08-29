@@ -556,6 +556,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   };
 
+  const mapSupabaseFdr = (f: any): FdrItem => {
+    return {
+      id: f.id,
+      fdrNo: f.fdr_no || f.fdrNo || f.id,
+      bankName: f.bank_name || f.bankName || '',
+      amount: Number(f.amount) || 0,
+      date: f.date || '',
+      tenureMonths: Number(f.tenure_months || f.tenureMonths) || 12,
+      interestRate: f.interest_rate !== undefined && f.interest_rate !== null ? Number(f.interest_rate) : undefined,
+      status: (f.status || 'active') as 'active' | 'matured' | 'closed',
+      notes: f.notes || '',
+      addedBy: f.added_by || f.addedBy || 'System',
+      createdAt: f.created_at || f.createdAt || new Date().toISOString()
+    };
+  };
+
   // Fetch from Supabase on mount
   useEffect(() => {
     const fetchFromSupabase = async () => {
@@ -766,6 +782,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           })));
         }
 
+        // 11. FDRs (Safe fetch with try/catch to avoid breaking if table is not created yet)
+        try {
+          const { data: fdrsData } = await supabase.from('fdrs').select('*');
+          if (fdrsData && fdrsData.length > 0) {
+            setFdrs(fdrsData.map(mapSupabaseFdr));
+          }
+        } catch (fdrErr) {
+          console.warn('FDRs table not found or not accessible yet:', fdrErr);
+        }
+
       } catch (err) {
         console.error('Error fetching from Supabase:', err);
       } finally {
@@ -866,6 +892,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           })));
         }
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fdrs' }, async () => {
+        try {
+          const { data: fdrsData } = await supabase.from('fdrs').select('*');
+          if (fdrsData) setFdrs(fdrsData.map(mapSupabaseFdr));
+        } catch (err) { /* ignore safe fallback */ }
+      })
       .subscribe();
 
     return () => {
@@ -906,6 +938,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             createdAt: t.created_at
           })));
         }
+
+        // Safe poll for fdrs
+        try {
+          const { data: fdrsData } = await supabase.from('fdrs').select('*');
+          if (fdrsData) {
+            setFdrs(fdrsData.map(mapSupabaseFdr));
+          }
+        } catch (fdrErr) { /* ignore */ }
       } catch (e) {
         // silent polling failure catch
       }
@@ -1735,6 +1775,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       createdAt: now,
     };
     setFdrs(prev => [newFdr, ...prev]);
+
+    // Sync to Supabase
+    if (isSupabaseConfigured()) {
+      supabase.from('fdrs').insert([{
+        id: newFdr.id,
+        fdr_no: newFdr.fdrNo,
+        bank_name: newFdr.bankName,
+        amount: newFdr.amount,
+        date: newFdr.date,
+        tenure_months: newFdr.tenureMonths,
+        interest_rate: newFdr.interestRate,
+        status: newFdr.status,
+        notes: newFdr.notes,
+        added_by: newFdr.addedBy,
+        created_at: newFdr.createdAt
+      }]).then(({ error }) => {
+        if (error) console.error('Error inserting FDR into Supabase:', error);
+      });
+    }
+
     addAuditLog('FDR_ADD', `FDR তৈরি: ${fdrNo}, পরিমাণ: ৳ ${fdrData.amount}`);
     showToast(language === 'bn' ? 'FDR সফলভাবে তৈরি করা হয়েছে' : 'FDR created successfully', 'success');
   };
@@ -1742,6 +1802,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const deleteFdr = (id: string) => {
     const target = fdrs.find(f => f.id === id);
     setFdrs(prev => prev.filter(f => f.id !== id));
+
+    // Sync to Supabase
+    if (isSupabaseConfigured()) {
+      supabase.from('fdrs').delete().eq('id', id).then(({ error }) => {
+        if (error) console.error('Error deleting FDR from Supabase:', error);
+      });
+    }
+
     if (target) {
       addAuditLog('FDR_DELETE', `FDR মুছে ফেলা হয়েছে: ${target.fdrNo}`);
     }
