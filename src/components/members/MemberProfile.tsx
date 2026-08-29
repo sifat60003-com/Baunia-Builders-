@@ -23,6 +23,7 @@ import {
   Upload,
   Save,
   X,
+  Plus,
   KeyRound,
   Sparkles,
   Check,
@@ -53,12 +54,24 @@ export const MemberProfile: React.FC = () => {
     t, 
     currentUser,
     updateMember,
+    addExpense,
+    addIncome,
     showToast
   } = useApp();
 
-  const [activeProfileTab, setActiveProfileTab] = useState<'info' | 'schedule' | 'nominees' | 'shares' | 'payments' | 'statement'>('info');
+  const [activeProfileTab, setActiveProfileTab] = useState<'info' | 'schedule' | 'nominees' | 'shares' | 'payments' | 'statement' | 'cancellation'>('info');
 
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // Nominee Edit State
+  const [editingNomineeIdx, setEditingNomineeIdx] = useState<number | null>(null); // null means not editing, -1 means adding new
+  const [nomineeName, setNomineeName] = useState('');
+  const [nomineeRelation, setNomineeRelation] = useState('');
+  const [nomineePercentage, setNomineePercentage] = useState(100);
+  const [nomineeMobile, setNomineeMobile] = useState('');
+  const [nomineeNid, setNomineeNid] = useState('');
+  const [nomineeAddress, setNomineeAddress] = useState('');
+  const [nomineePhoto, setNomineePhoto] = useState('');
 
   const member = members.find(m => m.id === selectedMemberId) || members[0];
 
@@ -356,6 +369,20 @@ export const MemberProfile: React.FC = () => {
         >
           {language === 'bn' ? 'পূর্ণাঙ্গ মেম্বার স্টেটমেন্ট (A4)' : 'Financial Statement'}
         </button>
+
+        {currentUser.role !== 'collector' && (
+          <button
+            onClick={() => setActiveProfileTab('cancellation')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 border ${
+              activeProfileTab === 'cancellation' 
+                ? 'bg-rose-600 border-rose-600 text-white shadow-xs' 
+                : 'text-rose-600 border-rose-200 hover:bg-rose-50'
+            }`}
+          >
+            <ShieldAlert className="w-3.5 h-3.5" />
+            <span>{language === 'bn' ? 'সদস্যতা বাতিল ও রিফান্ড' : 'Cancellation & Refund'}</span>
+          </button>
+        )}
       </div>
 
       {/* Tab: 12-Month Schedule & Matrix */}
@@ -640,46 +667,427 @@ export const MemberProfile: React.FC = () => {
       {/* Tab 2: Nominee Management */}
       {activeProfileTab === 'nominees' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {member.nominees?.map((nominee, idx) => (
-              <div
-                key={nominee.id || idx}
-                className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-3"
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <h3 className="text-sm font-bold text-slate-900">
+              {language === 'bn' ? 'মনোনীত ব্যক্তি (নমিনি) ব্যবস্থাপনা' : 'Nominee Management'}
+            </h3>
+            {editingNomineeIdx === null && currentUser.role !== 'collector' && (
+              <button
+                onClick={() => {
+                  setEditingNomineeIdx(-1);
+                  setNomineeName('');
+                  setNomineeRelation('');
+                  setNomineePercentage(100);
+                  setNomineeMobile('');
+                  setNomineeNid('');
+                  setNomineeAddress('');
+                  setNomineePhoto('');
+                }}
+                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition cursor-pointer"
               >
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-xl bg-blue-50 text-blue-700">
-                      <User className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-sm">{nominee.name}</h4>
-                      <span className="text-xs text-blue-600 font-semibold">{nominee.relation}</span>
-                    </div>
-                  </div>
-                  <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bold text-xs">
-                    {language === 'bn' ? toBnDigits(nominee.percentage) : nominee.percentage}% অংশীদার
-                  </span>
+                <Plus className="w-4 h-4" />
+                <span>{language === 'bn' ? 'নতুন নমিনি যোগ করুন' : 'Add New Nominee'}</span>
+              </button>
+            )}
+          </div>
+
+          {editingNomineeIdx !== null ? (
+            /* Nominee Edit Form */
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4 max-w-xl">
+              <h4 className="text-xs font-extrabold text-blue-900 uppercase tracking-wider pb-2 border-b border-slate-100">
+                {editingNomineeIdx === -1 
+                  ? (language === 'bn' ? 'নতুন নমিনির বিবরণী যোগ করুন' : 'Add New Nominee Details') 
+                  : (language === 'bn' ? 'মনোনীত ব্যক্তির তথ্য সংশোধন করুন' : 'Edit Nominee Details')}
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">নমিনির নাম (Name) <span className="text-rose-500">*</span></label>
+                  <input
+                    type="text"
+                    value={nomineeName}
+                    onChange={(e) => setNomineeName(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="নমিনির নাম লিখুন"
+                  />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-slate-400 block">মোবাইল:</span>
-                    <span className="font-mono font-bold text-slate-800">{nominee.mobile || 'প্রযোজ্য নয়'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">এনআইডি:</span>
-                    <span className="font-mono font-bold text-slate-800">{nominee.nidBirthReg || 'প্রযোজ্য নয়'}</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-slate-400 block">ঠিকানা:</span>
-                    <span className="text-slate-700">{nominee.address}</span>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">সম্পর্ক (Relation)</label>
+                  <input
+                    type="text"
+                    value={nomineeRelation}
+                    onChange={(e) => setNomineeRelation(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="যেমন: স্ত্রী, পুত্র, কন্যা ইত্যাদি"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">অংশীদারিত্ব বা বন্টন হার (%)</label>
+                  <input
+                    type="number"
+                    value={nomineePercentage}
+                    onChange={(e) => setNomineePercentage(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold focus:ring-2 focus:ring-blue-500/20"
+                    min="1"
+                    max="100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">মোবাইল নম্বর (Mobile)</label>
+                  <input
+                    type="text"
+                    value={nomineeMobile}
+                    onChange={(e) => setNomineeMobile(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 font-mono"
+                    placeholder="01XXXXXXXXX"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">NID / জন্ম নিবন্ধন নং</label>
+                  <input
+                    type="text"
+                    value={nomineeNid}
+                    onChange={(e) => setNomineeNid(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 font-mono"
+                    placeholder="আইডি নম্বর লিখুন"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">ঠিকানা (Address)</label>
+                  <textarea
+                    value={nomineeAddress}
+                    onChange={(e) => setNomineeAddress(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 h-16"
+                    placeholder="পূর্ণ ঠিকানা লিখুন"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1.5">নমিনির পাসপোর্ট ছবি (Nominee Photo)</label>
+                  <div className="flex items-center gap-4">
+                    {nomineePhoto ? (
+                      <img
+                        src={nomineePhoto}
+                        alt="Nominee Photo Preview"
+                        className="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-2xs shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-slate-100 rounded-xl border border-slate-200/80 flex items-center justify-center text-slate-400 font-bold text-[10px] text-center shrink-0">
+                        কোনো ছবি নেই
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 2 * 1024 * 1024) {
+                              showToast('ফাইলের সাইজ ২MB এর বেশি হতে পারবে না!', 'error');
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setNomineePhoto(reader.result as string);
+                              showToast('নমিনির ছবি সফলভাবে আপলোড হয়েছে!', 'success');
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div className="flex items-center gap-2 pt-3 border-t border-slate-100 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setEditingNomineeIdx(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer"
+                >
+                  বাতিল করুন
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!nomineeName) {
+                      showToast('নমিনির নাম আবশ্যক!', 'error');
+                      return;
+                    }
+                    const newNom = {
+                      id: editingNomineeIdx === -1 ? `NOM-${Date.now()}` : (member.nominees?.[editingNomineeIdx]?.id || `NOM-${Date.now()}`),
+                      name: nomineeName,
+                      relation: nomineeRelation,
+                      percentage: nomineePercentage,
+                      mobile: nomineeMobile,
+                      nidBirthReg: nomineeNid,
+                      address: nomineeAddress,
+                      photoUrl: nomineePhoto
+                    };
+                    let updated = [...(member.nominees || [])];
+                    if (editingNomineeIdx === -1) {
+                      updated.push(newNom);
+                    } else {
+                      updated[editingNomineeIdx] = newNom;
+                    }
+                    updateMember(member.id, { nominees: updated });
+                    setEditingNomineeIdx(null);
+                    showToast('নমিনির তথ্য সফলভাবে সংরক্ষিত হয়েছে!', 'success');
+                  }}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>তথ্য সংরক্ষণ করুন</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Nominees List View */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(!member.nominees || member.nominees.length === 0) ? (
+                <div className="col-span-2 p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
+                  <p className="text-slate-400 font-medium text-xs">কোনো মনোনীত ব্যক্তির তথ্য নেই। অনুগ্রহ করে নতুন নমিনি যোগ করুন।</p>
+                </div>
+              ) : (
+                member.nominees.map((nominee, idx) => (
+                  <div
+                    key={nominee.id || idx}
+                    className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-4"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between pb-2 border-b border-slate-100 gap-2">
+                        <div className="flex items-center gap-3">
+                          {nominee.photoUrl ? (
+                            <img
+                              src={nominee.photoUrl}
+                              alt={nominee.name}
+                              className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="p-2.5 rounded-full bg-blue-50 text-blue-700 shrink-0">
+                              <User className="w-5 h-5" />
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="font-extrabold text-slate-900 text-sm">{nominee.name}</h4>
+                            <span className="text-xs text-blue-600 font-bold">{nominee.relation}</span>
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px]">
+                          {language === 'bn' ? toBnDigits(nominee.percentage) : nominee.percentage}% অংশীদার
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs pt-3">
+                        <div>
+                          <span className="text-slate-400 block mb-0.5">মোবাইল:</span>
+                          <span className="font-mono font-bold text-slate-800">{nominee.mobile || 'প্রযোজ্য নয়'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block mb-0.5">এনআইডি:</span>
+                          <span className="font-mono font-bold text-slate-800">{nominee.nidBirthReg || 'প্রযোজ্য নয়'}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-slate-400 block mb-0.5">ঠিকানা:</span>
+                          <span className="text-slate-700 font-medium">{nominee.address || 'প্রযোজ্য নয়'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {currentUser.role !== 'collector' && (
+                      <div className="flex items-center gap-2 pt-3 border-t border-slate-100 justify-end">
+                        <button
+                          onClick={() => {
+                            setEditingNomineeIdx(idx);
+                            setNomineeName(nominee.name);
+                            setNomineeRelation(nominee.relation);
+                            setNomineePercentage(nominee.percentage);
+                            setNomineeMobile(nominee.mobile || '');
+                            setNomineeNid(nominee.nidBirthReg || '');
+                            setNomineeAddress(nominee.address || '');
+                            setNomineePhoto(nominee.photoUrl || '');
+                          }}
+                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold rounded-lg transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <Edit className="w-3 h-3" />
+                          <span>সংশোধন</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('আপনি কি নিশ্চিতভাবে এই নমিনিকে মুছে ফেলতে চান?')) {
+                              const updated = member.nominees.filter((_, i) => i !== idx);
+                              updateMember(member.id, { nominees: updated });
+                              showToast('মনোনীত ব্যক্তি সফলভাবে অপসারিত হয়েছেন!', 'info');
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold rounded-lg transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                          <span>মুছে ফেলুন</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       )}
+
+      {/* Tab: Cancellation & Refund */}
+      {activeProfileTab === 'cancellation' && (() => {
+        const joinDate = new Date(member.joinDate);
+        const today = new Date();
+        const diffTime = Math.abs(today.getTime() - joinDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const durationInYears = diffDays / 365;
+        const isLessThanTwoYears = durationInYears < 2;
+
+        const totalDeposit = member.currentDeposit;
+        const deductionRate = isLessThanTwoYears ? 0.2 : 0;
+        const deduction = totalDeposit * deductionRate;
+        const refundAmount = totalDeposit - deduction;
+
+        const handleProcessCancellation = () => {
+          if (member.status === 'inactive') {
+            showToast('সদস্যের অ্যাকাউন্ট ইতিমধ্যে নিষ্ক্রিয় বা বাতিল করা হয়েছে!', 'error');
+            return;
+          }
+          if (!window.confirm(`আপনি কি নিশ্চিতভাবে ${member.nameBn}-এর সদস্যতা বাতিল করতে চান? \n\nফেরতযোগ্য পরিমাণ: ৳${refundAmount.toLocaleString('en-IN')}\nকর্তনকৃত পরিমাণ: ৳${deduction.toLocaleString('en-IN')} (২০%)`)) {
+            return;
+          }
+
+          // 1. Record refund as expense
+          addExpense({
+            date: new Date().toISOString().split('T')[0],
+            category: 'অফিস পরিচালনা ব্যয়',
+            description: `সদস্যতা অবসান ও সঞ্চয় ফেরত: ${member.nameBn} (${member.id})`,
+            amount: refundAmount,
+            paymentMethod: 'cash',
+            approvedBy: currentUser.name,
+            addedBy: currentUser.name,
+            status: 'approved',
+          });
+
+          // 2. Record deduction as project income if any
+          if (deduction > 0) {
+            addIncome({
+              date: new Date().toISOString().split('T')[0],
+              category: 'প্রকল্প আয় ও অন্যান্য',
+              description: `সদস্যতা বাতিল বাবদ ২০% সার্ভিস চার্জ কর্তন: ${member.nameBn} (${member.id})`,
+              amount: deduction,
+              paymentMethod: 'cash',
+              receivedBy: currentUser.name,
+              addedBy: currentUser.name,
+              status: 'received',
+            });
+          }
+
+          // 3. Update member status to inactive and balance to 0
+          updateMember(member.id, {
+            status: 'inactive',
+            currentDeposit: 0,
+            shareQty: 0,
+            totalShareValue: 0,
+            notes: `${member.notes || ''}\n[${new Date().toISOString().split('T')[0]}] সদস্যতা বাতিল ও রিফান্ড সম্পন্ন। রিফান্ড: ৳${refundAmount}, কর্তন: ৳${deduction} (${isLessThanTwoYears ? '২ বছরের কম সময়ের জন্য ২০% কর্তন' : '২ বছরের বেশি সময়ের জন্য ০% কর্তন'})`,
+          });
+
+          showToast('সদস্যতা অবসান ও রিফান্ড প্রক্রিয়া সফলভাবে সম্পন্ন হয়েছে!', 'success');
+        };
+
+        return (
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs max-w-2xl space-y-5">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-100 text-rose-600">
+              <ShieldAlert className="w-6 h-6 shrink-0" />
+              <div>
+                <h3 className="font-extrabold text-slate-950 text-sm">সদস্যতা অবসান ও রিফান্ড হিসেব</h3>
+                <p className="text-xs text-slate-500">Membership Termination & Refund Statement</p>
+              </div>
+            </div>
+
+            {/* Rule Callout */}
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1.5 text-slate-800">
+              <p className="font-bold text-amber-900 flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-700" />
+                বাউনিয়া বিল্ডার্স অবসান নিয়মাবলী (Cancellation Rules):
+              </p>
+              <ul className="list-disc pl-5 space-y-1 text-slate-700 leading-relaxed font-medium">
+                <li>যদি সদস্যতা গ্রহণের মেয়াদ ২ বছরের কম হয়: <strong>মোট জমা থেকে ২০% কর্তন করা হবে (Deduction = ২০%)।</strong></li>
+                <li>যদি সদস্যতা গ্রহণের মেয়াদ ২ বছর বা তার বেশি হয়: <strong>কোনো সার্ভিস চার্জ কর্তন করা হবে না (Deduction = ০%)।</strong></li>
+                <li>নিট ফেরতযোগ্য টাকা = মোট সঞ্চয় জমা − কর্তনকৃত পরিমাণ।</li>
+              </ul>
+            </div>
+
+            {/* Calculations Breakdown */}
+            <div className="grid grid-cols-2 gap-4 text-xs pt-2">
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <span className="text-slate-400 block mb-0.5">যোগদানের তারিখ:</span>
+                <span className="font-bold text-slate-900">{formatDate(member.joinDate, true)}</span>
+              </div>
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <span className="text-slate-400 block mb-0.5">সদস্যতা সময়কাল (Duration):</span>
+                <span className="font-bold text-slate-900">
+                  {toBnDigits(diffDays)} দিন ({toBnDigits(durationInYears.toFixed(2))} বছর)
+                </span>
+              </div>
+
+              <div className="col-span-2 border-t border-dashed border-slate-200 my-1"></div>
+
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <span className="text-slate-400 block mb-0.5">মোট সঞ্চয় জমা (Total Deposit):</span>
+                <span className="font-black text-slate-900 text-sm">
+                  ৳ {toBnDigits(totalDeposit.toLocaleString('en-IN'))}
+                </span>
+              </div>
+              <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl">
+                <span className="text-red-700 font-bold block mb-0.5">
+                  সার্ভিস চার্জ কর্তন {isLessThanTwoYears ? '(২০%)' : '(০%)'}:
+                </span>
+                <span className="font-black text-red-900 text-sm">
+                  ৳ {toBnDigits(deduction.toLocaleString('en-IN'))}
+                </span>
+                <span className="text-[9px] block text-red-600 font-bold mt-0.5">
+                  {isLessThanTwoYears ? 'মেয়াদ ২ বছরের কম হওয়ায় ২০% কর্তন প্রযোজ্য' : 'মেয়াদ ২ বছরের বেশি হওয়ায় কর্তন প্রযোজ্য নয়'}
+                </span>
+              </div>
+
+              <div className="col-span-2 p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-center">
+                <span className="text-emerald-800 font-bold block mb-1">সর্বমোট ফেরতযোগ্য নিট রিফান্ড (Net Refundable):</span>
+                <span className="font-black text-emerald-950 text-xl block">
+                  ৳ {toBnDigits(refundAmount.toLocaleString('en-IN'))}
+                </span>
+              </div>
+            </div>
+
+            {/* Status notice or cancel button */}
+            {member.status === 'inactive' ? (
+              <div className="p-4 bg-slate-100 text-slate-600 rounded-xl text-center font-bold text-xs flex items-center justify-center gap-1.5">
+                <CheckCircle2 className="w-5 h-5 text-slate-500" />
+                <span>এই সদস্যের অ্যাকাউন্ট ইতিমধ্যেই বাতিল ও নিস্পত্তি করা হয়েছে।</span>
+              </div>
+            ) : (
+              <div className="pt-3 border-t border-slate-100 flex justify-end">
+                <button
+                  onClick={handleProcessCancellation}
+                  className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                  <span>সদস্যতা আনুষ্ঠানিকভাবে বাতিল ও রিফান্ড প্রক্রিয়া করুন</span>
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Tab 3: Shares Tab */}
       {activeProfileTab === 'shares' && (

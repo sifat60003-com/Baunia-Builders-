@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   HandCoins, 
@@ -97,6 +97,21 @@ export const CollectPaymentView: React.FC = () => {
   const extraMonthsCount = selectedSchedules.filter(s => s.isExtraMonth).length;
   const regularMonthsCount = selectedSchedules.length;
 
+  // Automatic Fine Calculation
+  // Due Date = 15 of every month. Fine = 200 Tk. Fine applies from 16th.
+  const todayStr = new Date().toISOString().split('T')[0];
+  const totalFineAmount = useMemo(() => {
+    if (paymentType !== 'monthly_fee') return 0;
+    
+    return selectedSchedules.reduce((sum, s) => {
+      const deadline = `${s.id}-15`;
+      if (todayStr > deadline) {
+        return sum + 200;
+      }
+      return sum;
+    }, 0);
+  }, [paymentType, selectedSchedules, todayStr]);
+
   // Find all unpaid / due months for this member up to August 2026
   const dueMonthsList = memberMonthlyStatus.filter(m => (m.status === 'due' || m.status === 'partial') && m.schedule.id <= '2026-08');
 
@@ -130,8 +145,8 @@ export const CollectPaymentView: React.FC = () => {
 
   // When selectedMonthIds changes, auto update amount (locked/readOnly)
   useEffect(() => {
-    setAmount(calculatedScheduleTotal || (2000 * shareQty));
-  }, [selectedMonthIds, calculatedScheduleTotal, shareQty]);
+    setAmount((calculatedScheduleTotal || (2000 * shareQty)) + totalFineAmount);
+  }, [selectedMonthIds, calculatedScheduleTotal, shareQty, totalFineAmount]);
 
   // Toggle month selection handler (Multi-select)
   const handleToggleMonth = (schedule: MonthScheduleItem) => {
@@ -216,7 +231,7 @@ export const CollectPaymentView: React.FC = () => {
     }
 
     const previousDue = selectedMember.currentDue || 0;
-    const remainingDue = Math.max(0, previousDue - (paymentType === 'monthly_fee' ? amount : 0));
+    const remainingDue = Math.max(0, previousDue - (paymentType === 'monthly_fee' ? (amount - totalFineAmount) : amount));
 
     // Construct breakdown items for the selected months
     let monthBreakdown: MonthPaymentBreakdown[] = [];
@@ -272,6 +287,7 @@ export const CollectPaymentView: React.FC = () => {
       isExtraMonth,
       baseAmount: paymentType === 'monthly_fee' ? totalBaseAmount : amount,
       extraAmount: paymentType === 'monthly_fee' ? totalExtraAmount : 0,
+      fineAmount: totalFineAmount,
       remarks: remarks.trim() || undefined,
       collectorName,
       previousDue,
@@ -715,7 +731,7 @@ export const CollectPaymentView: React.FC = () => {
                   </div>
 
                   {/* Breakdown Math calculation row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 pt-1 text-xs">
                     <div className="p-2.5 rounded-xl bg-white/80 border border-slate-200/80">
                       <div className="text-[10px] text-slate-500 font-semibold">নিয়মিত কিস্তি (Base Rate)</div>
                       <div className="font-bold text-slate-800 mt-0.5">
@@ -734,10 +750,21 @@ export const CollectPaymentView: React.FC = () => {
                       </div>
                     </div>
 
+                    <div className="p-2.5 rounded-xl bg-red-50 border border-red-200">
+                      <div className="text-[10px] text-red-800 font-semibold">বিলম্ব জরিমানা (Late Fine)</div>
+                      <div className="font-bold text-red-900 mt-0.5">
+                        {totalFineAmount > 0 ? (
+                          <span>৳ {toBnDigits(totalFineAmount.toLocaleString('en-IN'))} <span className="text-[9px] font-bold text-red-600 block">(১৬ তারিখ হতে প্রযোজ্য)</span></span>
+                        ) : (
+                          <span className="text-slate-400">০ ৳ (কোনো জরিমানা নেই)</span>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="p-2.5 rounded-xl bg-emerald-100/70 border border-emerald-300">
                       <div className="text-[10px] text-emerald-800 font-semibold">সর্বমোট স্বয়ংক্রিয় যোগফল</div>
                       <div className="font-black text-emerald-900 text-sm mt-0.5">
-                        ৳ {toBnDigits(calculatedScheduleTotal.toLocaleString('en-IN'))}
+                        ৳ {toBnDigits((calculatedScheduleTotal + totalFineAmount).toLocaleString('en-IN'))}
                       </div>
                     </div>
                   </div>

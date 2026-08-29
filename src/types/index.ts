@@ -64,6 +64,23 @@ export interface Member {
   nominees: Nominee[];
   createdAt: string;
   updatedAt: string;
+
+  // Added certificate & nominee fields
+  member_photo?: string;
+  nominee_name?: string;
+  nominee_relation?: string;
+  nominee_father?: string;
+  nominee_nid?: string;
+  nominee_mobile?: string;
+  nominee_address?: string;
+  nominee_photo?: string;
+  join_date?: string;
+
+  certificate_no?: string;
+  issue_date?: string;
+  share_qty?: number;
+  share_value?: number;
+  qr_code?: string;
 }
 
 export type ShareTransactionType = 'initial' | 'additional' | 'transfer' | 'refund';
@@ -131,6 +148,7 @@ export interface PaymentReceipt {
   notes?: string;
   previousDue?: number;
   remainingDue?: number;
+  fineAmount?: number;
   status?: string;
   collectorId: string;
   collectorName: string;

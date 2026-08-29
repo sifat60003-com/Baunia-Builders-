@@ -234,7 +234,11 @@ export const ReportsView: React.FC = () => {
                   <tbody className="divide-y divide-slate-100">
                     <tr>
                       <td className="p-2.5 font-medium">সদস্যদের নিয়মিত মাসিক চাঁদা ও সঞ্চয়</td>
-                      <td className="p-2.5 text-right font-bold text-emerald-700">{formatCurrency(stats.monthlyCollected, true)}</td>
+                      <td className="p-2.5 text-right font-bold text-emerald-700">{formatCurrency((stats.monthlyCollected || 0) - (stats.totalFines || 0), true)}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2.5 font-medium">বকেয়া চাঁদার জরিমানা আদায় (Fines)</td>
+                      <td className="p-2.5 text-right font-bold text-emerald-700">{formatCurrency(stats.totalFines || 0, true)}</td>
                     </tr>
                     <tr>
                       <td className="p-2.5 font-medium">নতুন শেয়ার বিক্রয় মূলধন</td>

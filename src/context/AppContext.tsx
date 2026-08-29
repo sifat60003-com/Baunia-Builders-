@@ -1441,6 +1441,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     collectorName?: string;
     previousDue?: number;
     remainingDue?: number;
+    fineAmount?: number;
   }): PaymentReceipt => {
     const member = members.find(m => m.id === paymentData.memberId);
     const date = paymentData.date || new Date().toISOString().split('T')[0];
@@ -1478,6 +1479,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       notes: paymentData.notes || paymentData.remarks,
       previousDue: prevDue,
       remainingDue: remDue,
+      fineAmount: paymentData.fineAmount,
       collectorId: currentUser.id,
       collectorName: paymentData.collectorName || currentUser.name,
       createdAt: new Date().toISOString(),
@@ -1548,7 +1550,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       date,
       type: 'member_payment',
       refId: receiptNo,
-      description: `${translations['bn'][paymentData.paymentType] || 'মাসিক চাঁদা'}${descMonth}: ${member?.nameBn} (${member?.id})`,
+      description: `${translations['bn'][paymentData.paymentType] || 'মাসিক চাঁদা'}${descMonth}${paymentData.fineAmount ? ` (জরিমানা ৳${paymentData.fineAmount} সহ)` : ''}: ${member?.nameBn} (${member?.id})`,
       debit: 0,
       credit: paymentData.amount,
       balance: newBalance,
@@ -2314,6 +2316,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
     const totalFdr = fdrs.filter(f => f.status === 'active').reduce((sum, f) => sum + (f.amount || 0), 0);
 
+    const totalFines = receipts.reduce((sum, r) => sum + (r.fineAmount || 0), 0);
+    const certificatesIssued = membersWithDynamicDues.filter(m => m.certificate_no || (m.shareQty > 0)).length;
+    const uniqueMembersWithFine = new Set(receipts.filter(r => r.fineAmount && r.fineAmount > 0).map(r => r.memberId)).size;
+
+    const totalShareCapital = totalShareValue;
+    const monthlyCollected = receipts
+      .filter(r => r.paymentType === 'monthly_fee' || r.paymentType === 'previous_due')
+      .reduce((sum, r) => sum + (r.amount || 0), 0);
+
     // Current Cash Balance: Total Collections + Total Income - Total Expenses - Total FDR
     const currentBalance = totalCollection + totalIncome - totalExpenses - totalFdr;
 
@@ -2324,6 +2335,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       totalShares,
       totalShareValue,
       totalCollection,
+      totalDeposits: totalCollection, // ReportsView compatibility
       todayCollection,
       thisMonthCollection,
       totalDue,
@@ -2331,6 +2343,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       totalExpenses,
       totalFdr,
       currentBalance,
+      cashInHand: currentBalance, // ReportsView compatibility
+      totalFines,
+      certificatesIssued,
+      uniqueMembersWithFine,
+      totalShareCapital,
+      monthlyCollected,
     };
   }, [membersWithDynamicDues, receipts, incomes, expenses, fdrs]);
 
