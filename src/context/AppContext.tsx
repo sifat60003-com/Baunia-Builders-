@@ -406,6 +406,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Toast system
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
+  // Refs for tracking actual database columns to prevent schema mismatch errors during updates
+  const membersColumnsRef = React.useRef<string[]>([]);
+  const nomineesColumnsRef = React.useRef<string[]>([]);
+
   const showToast = (text: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') => {
     const id = Date.now().toString() + Math.random().toString(36).substring(2, 5);
     setToasts(prev => [...prev, { id, text, type }]);
@@ -439,10 +443,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           id: `NOM-${m.id}-1`,
           name: m.nominee_name || '',
           relation: m.nominee_relation || 'নমিনী',
-          nidBirthReg: m.nominee_nid || '',
-          mobile: m.mobile || '',
+          nidBirthReg: m.nominee_nid || m.nominee_nid_birth_reg || '',
+          mobile: m.nominee_mobile || m.nominee_phone || m.nominee_contact || m.mobile || '',
           address: m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
-          percentage: Number(m.nominee_share_percent) || 100,
+          percentage: Number(m.nominee_share_percent) || Number(m.nominee_percentage) || 100,
         }] : []);
 
     const rawGender = String(m.gender || '').toLowerCase().trim();
@@ -615,6 +619,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // 3. Members
         const { data: membersData, error: mErr } = await supabase.from('members').select('*, nominees(*)');
         if (membersData && membersData.length > 0) {
+          membersColumnsRef.current = Object.keys(membersData[0]).filter(k => typeof membersData[0][k] !== 'object');
+          const firstMem = membersData[0];
+          if (firstMem.nominees && Array.isArray(firstMem.nominees) && firstMem.nominees.length > 0) {
+            nomineesColumnsRef.current = Object.keys(firstMem.nominees[0]);
+          } else {
+            // Fetch nominees columns separately if no members have nested nominees yet
+            supabase.from('nominees').select('*').limit(1).then(({ data: nomData }) => {
+              if (nomData && nomData.length > 0) {
+                nomineesColumnsRef.current = Object.keys(nomData[0]);
+              }
+            });
+          }
           setMembers(membersData.map(mapSupabaseMember));
         } else if (mErr) {
           console.warn('Supabase members err:', mErr.message);
@@ -759,7 +775,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, async () => {
         const { data: mems } = await supabase.from('members').select('*');
-        if (mems) setMembers(mems.map(mapSupabaseMember));
+        if (mems) {
+          if (mems.length > 0) {
+            membersColumnsRef.current = Object.keys(mems[0]).filter(k => typeof mems[0][k] !== 'object');
+          }
+          setMembers(mems.map(mapSupabaseMember));
+        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, async () => {
         const { data: txs } = await supabase.from('transactions').select('*');
@@ -849,7 +870,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (recs) setReceipts(recs.map(mapSupabaseReceipt));
 
         const { data: mems } = await supabase.from('members').select('*');
-        if (mems) setMembers(mems.map(mapSupabaseMember));
+        if (mems) {
+          if (mems.length > 0) {
+            membersColumnsRef.current = Object.keys(mems[0]).filter(k => typeof mems[0][k] !== 'object');
+          }
+          setMembers(mems.map(mapSupabaseMember));
+        }
 
         const { data: txs } = await supabase.from('transactions').select('*');
         if (txs) {
@@ -985,7 +1011,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setMembers(prev => [newMember, ...prev]);
     // Sync to Supabase
     if (isSupabaseConfigured()) {
-      supabase.from('members').insert([{
+      const firstNominee = newMember.nominees?.[0];
+      const memberPayload: any = {
         id: newMember.id,
         member_no: newMember.memberNo,
         name_bn: newMember.nameBn,
@@ -994,6 +1021,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         mother_name: newMember.motherName || '',
         spouse_name: newMember.spouseName || '',
         birth_date: newMember.dob || '1990-01-01',
+        dob: newMember.dob || '1990-01-01', // Support both birth_date and dob columns
         gender: newMember.gender || 'male',
         nid: newMember.nid || '',
         birth_reg_no: newMember.birthRegNo || '',
@@ -1016,24 +1044,62 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         notes: newMember.notes || '',
         created_at: newMember.createdAt,
         updated_at: newMember.updatedAt
-      }]).then(async ({ error }) => {
+      };
+
+      // Support flat nominee columns if they exist in the members table
+      if (firstNominee) {
+        memberPayload.nominee_name = firstNominee.name || '';
+        memberPayload.nominee_relation = firstNominee.relation || '';
+        memberPayload.nominee_nid = firstNominee.nidBirthReg || '';
+        memberPayload.nominee_nid_birth_reg = firstNominee.nidBirthReg || '';
+        memberPayload.nominee_mobile = firstNominee.mobile || '';
+        memberPayload.nominee_phone = firstNominee.mobile || '';
+        memberPayload.nominee_contact = firstNominee.mobile || '';
+        memberPayload.nominee_share_percent = Number(firstNominee.percentage) || 100;
+        memberPayload.nominee_percentage = Number(firstNominee.percentage) || 100;
+      }
+
+      // DYNAMIC COLUMN FILTERING FOR MEMBERS TABLE INSERTION
+      if (membersColumnsRef.current.length > 0) {
+        Object.keys(memberPayload).forEach(key => {
+          if (!membersColumnsRef.current.includes(key)) {
+            delete memberPayload[key];
+          }
+        });
+      }
+
+      supabase.from('members').insert([memberPayload]).then(async ({ error }) => {
         if (error) {
           console.error('Supabase insert member error:', error);
         } else {
           // Insert Nominees into nominees table
           if (newMember.nominees && newMember.nominees.length > 0) {
-            const nomineeRows = newMember.nominees.map(n => ({
-              id: n.id && !n.id.startsWith('NOM-') ? n.id : `NOM-${newMember.id}-${Math.random().toString(36).substring(2, 7)}`,
-              member_id: newMember.id,
-              name: n.name || '',
-              relation: n.relation || 'নমিনী',
-              nid_birth_reg: n.nidBirthReg || '',
-              mobile: n.mobile || '',
-              address: n.address || '',
-              percentage: Number(n.percentage) || 0,
-              photo_url: n.photoUrl || null,
-              created_at: new Date().toISOString()
-            }));
+            const nomineeRows = newMember.nominees.map(n => {
+              const rowPayload: any = {
+                id: n.id && !n.id.startsWith('NOM-') ? n.id : `NOM-${newMember.id}-${Math.random().toString(36).substring(2, 7)}`,
+                member_id: newMember.id,
+                name: n.name || '',
+                relation: n.relation || 'নমিনী',
+                nid_birth_reg: n.nidBirthReg || '',
+                mobile: n.mobile || '',
+                address: n.address || '',
+                percentage: Number(n.percentage) || 0,
+                photo_url: n.photoUrl || null,
+                created_at: new Date().toISOString()
+              };
+
+              // DYNAMIC COLUMN FILTERING FOR NOMINEES TABLE INSERTION
+              if (nomineesColumnsRef.current.length > 0) {
+                Object.keys(rowPayload).forEach(key => {
+                  if (!nomineesColumnsRef.current.includes(key)) {
+                    delete rowPayload[key];
+                  }
+                });
+              }
+
+              return rowPayload;
+            });
+
             const { error: nomErr } = await supabase.from('nominees').insert(nomineeRows);
             if (nomErr) console.error('Supabase insert nominees error:', nomErr);
           }
@@ -1105,7 +1171,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (memberData.fatherName !== undefined) supabasePayload.father_name = memberData.fatherName;
       if (memberData.motherName !== undefined) supabasePayload.mother_name = memberData.motherName;
       if (memberData.spouseName !== undefined) supabasePayload.spouse_name = memberData.spouseName;
-      if (memberData.dob !== undefined) supabasePayload.birth_date = memberData.dob;
+      if (memberData.dob !== undefined) {
+        supabasePayload.birth_date = memberData.dob;
+        supabasePayload.dob = memberData.dob; // Support both birth_date and dob columns
+      }
       if (memberData.gender !== undefined) supabasePayload.gender = memberData.gender;
       if (memberData.nid !== undefined) supabasePayload.nid = memberData.nid;
       if (memberData.birthRegNo !== undefined) supabasePayload.birth_reg_no = memberData.birthRegNo;
@@ -1126,7 +1195,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (memberData.openingBalance !== undefined) supabasePayload.opening_balance = memberData.openingBalance;
       if (memberData.currentDue !== undefined) supabasePayload.current_due = memberData.currentDue;
       if (memberData.notes !== undefined) supabasePayload.notes = memberData.notes;
+
+      // Support flat nominee columns if they exist in the members table
+      if (memberData.nominees !== undefined) {
+        const firstNominee = memberData.nominees?.[0];
+        if (firstNominee) {
+          supabasePayload.nominee_name = firstNominee.name || '';
+          supabasePayload.nominee_relation = firstNominee.relation || '';
+          supabasePayload.nominee_nid = firstNominee.nidBirthReg || '';
+          supabasePayload.nominee_nid_birth_reg = firstNominee.nidBirthReg || '';
+          supabasePayload.nominee_mobile = firstNominee.mobile || '';
+          supabasePayload.nominee_phone = firstNominee.mobile || '';
+          supabasePayload.nominee_contact = firstNominee.mobile || '';
+          supabasePayload.nominee_share_percent = Number(firstNominee.percentage) || 100;
+          supabasePayload.nominee_percentage = Number(firstNominee.percentage) || 100;
+        }
+      }
+
       supabasePayload.updated_at = new Date().toISOString();
+
+      // DYNAMIC COLUMN FILTERING: Prevent errors if database has fewer columns
+      if (membersColumnsRef.current.length > 0) {
+        Object.keys(supabasePayload).forEach(key => {
+          if (!membersColumnsRef.current.includes(key)) {
+            delete supabasePayload[key];
+          }
+        });
+      }
 
       supabase.from('members').update(supabasePayload).eq('id', id).then(async ({ error }) => {
         if (error) {
@@ -1141,18 +1236,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           try {
             await supabase.from('nominees').delete().eq('member_id', id);
             if (memberData.nominees.length > 0) {
-              const nomineeRows = memberData.nominees.map(n => ({
-                id: n.id && !n.id.startsWith('NOM-') ? n.id : `NOM-${id}-${Math.random().toString(36).substring(2, 7)}`,
-                member_id: id,
-                name: n.name || '',
-                relation: n.relation || 'নমিনী',
-                nid_birth_reg: n.nidBirthReg || '',
-                mobile: n.mobile || '',
-                address: n.address || '',
-                percentage: Number(n.percentage) || 0,
-                photo_url: n.photoUrl || null,
-                created_at: new Date().toISOString()
-              }));
+              const nomineeRows = memberData.nominees.map(n => {
+                const rowPayload: any = {
+                  id: n.id && !n.id.startsWith('NOM-') ? n.id : `NOM-${id}-${Math.random().toString(36).substring(2, 7)}`,
+                  member_id: id,
+                  name: n.name || '',
+                  relation: n.relation || 'নমিনী',
+                  nid_birth_reg: n.nidBirthReg || '',
+                  mobile: n.mobile || '',
+                  address: n.address || '',
+                  percentage: Number(n.percentage) || 0,
+                  photo_url: n.photoUrl || null,
+                  created_at: new Date().toISOString()
+                };
+                
+                // DYNAMIC NOMINEE COLUMN FILTERING
+                if (nomineesColumnsRef.current.length > 0) {
+                  Object.keys(rowPayload).forEach(key => {
+                    if (!nomineesColumnsRef.current.includes(key)) {
+                      delete rowPayload[key];
+                    }
+                  });
+                }
+                
+                return rowPayload;
+              });
+
               const { error: nomErr } = await supabase.from('nominees').insert(nomineeRows);
               if (nomErr) console.error('Supabase insert nominees error:', nomErr);
             }
