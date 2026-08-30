@@ -307,7 +307,7 @@ export const DueManagement: React.FC = () => {
                       {/* 12-Month Matrix Visual Mini-Grid */}
                       <td className="py-3 px-4 align-top">
                         <div className="flex flex-wrap gap-1 max-w-md">
-                          {summary.statusList.map(item => {
+                          {summary.statusList.filter(item => item.status !== 'paid').slice(0, 12).map(item => {
                             const isPaid = item.status === 'paid';
                             const isPartial = item.status === 'partial';
                             const isDue = item.status === 'due';
@@ -332,7 +332,7 @@ export const DueManagement: React.FC = () => {
                           })}
                         </div>
                         <div className="text-[11px] text-slate-500 mt-1">
-                          পরিশোধিত: <strong className="text-emerald-700">{toBnDigits(summary.paidMonthsCount)}</strong> / ১২ মাস
+                          পরিশোধিত: <strong className="text-emerald-700">{toBnDigits(summary.paidMonthsCount)}</strong> মাস
                         </div>
                       </td>
 

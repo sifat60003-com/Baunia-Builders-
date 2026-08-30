@@ -74,12 +74,14 @@ export const CollectPaymentView: React.FC = () => {
   );
 
   // Dynamic schedule based on member's shareQty (month * share = amount, extra * share = amount)
-  const memberSchedule = getMonthlySchedule(shareQty);
+  const memberSchedule = getMonthlySchedule(shareQty, [], true);
 
   // Calculate monthly status matrix for selected member
   const memberMonthlyStatus = selectedMember 
     ? getMemberMonthlyStatusList(selectedMember.id, receipts, shareQty, selectedMember.memberNo) 
     : [];
+
+  const visibleUnpaidMonths = memberMonthlyStatus.filter(item => item.status !== 'paid').slice(0, 12);
 
   // Get array of scheduled items for currently selected months (excluding paid months)
   const selectedSchedules = memberSchedule
@@ -172,25 +174,16 @@ export const CollectPaymentView: React.FC = () => {
 
   const handleSelectAll12Months = () => {
     setIsManualAmount(false);
-    const unpaidMonthIds = memberSchedule
-      .filter(m => {
-        const statusObj = memberMonthlyStatus.find(s => s.schedule.id === m.id);
-        return !statusObj || statusObj.status !== 'paid';
-      })
-      .map(m => m.id);
+    const unpaidMonthIds = visibleUnpaidMonths.map(item => item.schedule.id);
     setSelectedMonthIds(unpaidMonthIds);
-    showToast('সকল বকেয়া ও অপোগণ্ড মাস একসাথে নির্বাচিত হয়েছে', 'info');
+    showToast('সকল দৃশ্যমান মাস একসাথে নির্বাচিত হয়েছে', 'info');
   };
 
   const handleSelectFirstNMonths = (count: number) => {
     setIsManualAmount(false);
-    const unpaidMonths = memberSchedule
-      .filter(m => {
-        const statusObj = memberMonthlyStatus.find(s => s.schedule.id === m.id);
-        return !statusObj || statusObj.status !== 'paid';
-      })
+    const unpaidMonths = visibleUnpaidMonths
       .slice(0, count)
-      .map(m => m.id);
+      .map(item => item.schedule.id);
     setSelectedMonthIds(unpaidMonths);
     showToast(`প্রথম ${toBnDigits(count)}টি বকেয়া মাস নির্বাচিত হয়েছে`, 'info');
   };
@@ -568,7 +561,7 @@ export const CollectPaymentView: React.FC = () => {
 
               {/* 12-Month Interactive Grid with Multi-Select Checkboxes */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-                {memberMonthlyStatus.filter(item => item.status !== 'paid').map((item) => {
+                {visibleUnpaidMonths.map((item) => {
                   const isPaid = item.status === 'paid';
                   const isSelected = !isPaid && selectedMonthIds.includes(item.schedule.id);
                   const isPartial = item.status === 'partial';

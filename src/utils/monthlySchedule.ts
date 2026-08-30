@@ -21,7 +21,7 @@ export interface MonthScheduleItem {
  * - When all 12 months in the current block are paid, automatically shifts/removes 
  *   to show the next 12 months (Nov 2026 to Oct 2027, etc.).
  */
-export function getMonthlySchedule(shareQty: number = 1, paidMonthIds: string[] = []): MonthScheduleItem[] {
+export function getMonthlySchedule(shareQty: number = 1, paidMonthIds: string[] = [], returnAllBlocks: boolean = false): MonthScheduleItem[] {
   const qty = Math.max(1, Number(shareQty) || 1);
 
   const baseBlocks = [
@@ -86,6 +86,35 @@ export function getMonthlySchedule(shareQty: number = 1, paidMonthIds: string[] 
     }
     return months;
   };
+
+  if (returnAllBlocks) {
+    const allMonths: MonthScheduleItem[] = [];
+    let overallOrder = 1;
+    baseBlocks.forEach((block) => {
+      const blockMonths = generateBlockMonths(block.startYear, block.startMonth, block.endYear, block.endMonth);
+      blockMonths.forEach(m => {
+        const baseAmount = m.base * qty;
+        const extraAmount = m.extra * qty;
+        const totalAmount = baseAmount + extraAmount;
+        allMonths.push({
+          id: m.id,
+          nameBn: m.nameBn,
+          nameEn: m.nameEn,
+          shortNameBn: m.shortNameBn,
+          monthOrder: overallOrder++,
+          year: m.year,
+          monthNumber: m.monthNumber,
+          baseAmount,
+          extraAmount,
+          totalAmount,
+          isExtraMonth: m.isExtra,
+          labelBn: m.extra > 0 ? `${totalAmount.toLocaleString('en-IN')} ৳ (${baseAmount}+${extraAmount})` : `${totalAmount.toLocaleString('en-IN')} ৳`,
+          descriptionBn: m.extra > 0 ? `নিয়মিত ${baseAmount.toLocaleString('en-IN')} ৳ + বিশেষ এক্সট্রা ${extraAmount.toLocaleString('en-IN')} ৳` : 'নিয়মিত মাসিক সঞ্চয় কিস্তি'
+        });
+      });
+    });
+    return allMonths;
+  }
 
   let activeBlockIndex = 0;
   for (let idx = 0; idx < baseBlocks.length; idx++) {
@@ -218,7 +247,7 @@ export function getMemberMonthlyStatusList(
   const monthPaidAmountMap: Record<string, number> = {};
   const monthReceiptsMap: Record<string, Array<{ id: string; receiptNo: string; date: string; amount: number }>> = {};
 
-  const tempSchedule = getMonthlySchedule(shareQty, []);
+  const tempSchedule = getMonthlySchedule(shareQty, [], true);
   tempSchedule.forEach(m => {
     monthPaidAmountMap[m.id] = 0;
     monthReceiptsMap[m.id] = [];
@@ -328,7 +357,7 @@ export function getMemberMonthlyStatusList(
     .filter(s => (monthPaidAmountMap[s.id] || 0) >= s.totalAmount)
     .map(s => s.id);
 
-  const scheduleList = getMonthlySchedule(shareQty, paidMonthIds);
+  const scheduleList = getMonthlySchedule(shareQty, paidMonthIds, true);
 
   const statusList: MemberMonthStatus[] = scheduleList.map(schedule => {
     const paidAmountForMonth = monthPaidAmountMap[schedule.id] || 0;
