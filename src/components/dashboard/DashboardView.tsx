@@ -191,28 +191,6 @@ export const DashboardView: React.FC = () => {
       bgColor: 'bg-indigo-50',
       onClick: () => setActiveTab('shares'),
     },
-    {
-      id: 'members-with-fine',
-      title: language === 'bn' ? 'জরিমানাপ্রাপ্ত সদস্য' : 'Members with Fine',
-      value: language === 'bn' ? toBnDigits(stats.uniqueMembersWithFine || 0) : (stats.uniqueMembersWithFine || 0),
-      sub: language === 'bn' ? 'বিলম্বিত পরিশোধ জরিমানা' : 'Late payment fines',
-      icon: AlertCircle,
-      color: 'from-rose-500 to-red-600',
-      textColor: 'text-rose-700',
-      bgColor: 'bg-rose-50',
-      onClick: () => setActiveTab('dues'),
-    },
-    {
-      id: 'total-fines',
-      title: language === 'bn' ? 'সর্বমোট জরিমানা আদায়' : 'Total Fines Collected',
-      value: formatCurrency(stats.totalFines || 0, language === 'bn'),
-      sub: language === 'bn' ? 'জরিমানা ফান্ড ক্রেডিট' : 'Fine Fund Credit',
-      icon: Coins,
-      color: 'from-amber-500 to-orange-600',
-      textColor: 'text-amber-700',
-      bgColor: 'bg-amber-50',
-      onClick: () => setActiveTab('receipts'),
-    },
   ];
 
   // Quick Action Buttons
