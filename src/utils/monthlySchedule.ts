@@ -133,6 +133,13 @@ export const MONTHLY_SCHEDULE: MonthScheduleItem[] = getMonthlySchedule(1);
 
 export const TOTAL_SCHEDULE_AMOUNT = MONTHLY_SCHEDULE.reduce((sum, m) => sum + m.totalAmount, 0);
 
+export function getCurrentRunningMonthId(): string {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
 export interface MemberMonthStatus {
   schedule: MonthScheduleItem;
   paidAmount: number;
@@ -347,7 +354,7 @@ export function getMemberMonthlyStatusList(
     };
   });
 
-  const currentRunningMonthId = '2026-08';
+  const currentRunningMonthId = getCurrentRunningMonthId();
   let foundNext = false;
   statusList.forEach(item => {
     if (item.schedule.id <= currentRunningMonthId) {
@@ -396,7 +403,7 @@ export function getMemberScheduleSummary(
   shareQty: number = 1,
   memberNo?: number | string
 ) {
-  const currentRunningMonthId = '2026-08';
+  const currentRunningMonthId = getCurrentRunningMonthId();
   const statusList = getMemberMonthlyStatusList(memberId, receipts, shareQty, memberNo);
   const totalExpected = statusList.reduce((sum, m) => sum + m.schedule.totalAmount, 0);
   const totalPaid = statusList.reduce((sum, item) => sum + item.paidAmount, 0);

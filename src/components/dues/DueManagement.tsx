@@ -23,7 +23,8 @@ import {
   MONTHLY_SCHEDULE, 
   getMemberMonthlyStatusList, 
   getMemberScheduleSummary,
-  TOTAL_SCHEDULE_AMOUNT 
+  TOTAL_SCHEDULE_AMOUNT,
+  getCurrentRunningMonthId
 } from '../../utils/monthlySchedule';
 
 export const DueManagement: React.FC = () => {
@@ -48,8 +49,8 @@ export const DueManagement: React.FC = () => {
     dueAmount: number;
   } | null>(null);
 
-  // Compute status for all members up to August 2026 (2026-08)
-  const currentRunningMonthId = '2026-08';
+  // Compute status for all members dynamically up to the current running month
+  const currentRunningMonthId = getCurrentRunningMonthId();
   const membersDueAnalysis = members.map(m => {
     const statusSummary = getMemberScheduleSummary(m.id, receipts, m.shareQty, m.memberNo);
     const unpaidMonths = statusSummary.statusList.filter(s => (s.status === 'due' || s.status === 'partial') && s.schedule.id <= currentRunningMonthId);

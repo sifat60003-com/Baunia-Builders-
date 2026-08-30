@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { PaymentType, PaymentMethod, MonthPaymentBreakdown } from '../../types';
 import { formatCurrency, numberToBengaliWords, numberToEnglishWords, toBnDigits } from '../../utils/formatters';
-import { MONTHLY_SCHEDULE, getMonthlySchedule, getMemberMonthlyStatusList, MonthScheduleItem } from '../../utils/monthlySchedule';
+import { MONTHLY_SCHEDULE, getMonthlySchedule, getMemberMonthlyStatusList, MonthScheduleItem, getCurrentRunningMonthId } from '../../utils/monthlySchedule';
 
 export const CollectPaymentView: React.FC = () => {
   const { 
@@ -102,8 +102,8 @@ export const CollectPaymentView: React.FC = () => {
   const todayStr = new Date().toISOString().split('T')[0];
   const totalFineAmount = 0;
 
-  // Find all unpaid / due months for this member up to August 2026
-  const dueMonthsList = memberMonthlyStatus.filter(m => (m.status === 'due' || m.status === 'partial') && m.schedule.id <= '2026-08');
+  // Find all unpaid / due months for this member up to the current running month
+  const dueMonthsList = memberMonthlyStatus.filter(m => (m.status === 'due' || m.status === 'partial') && m.schedule.id <= getCurrentRunningMonthId());
 
   // Sync memberId when selectedMemberId from context changes
   useEffect(() => {
@@ -116,7 +116,7 @@ export const CollectPaymentView: React.FC = () => {
   useEffect(() => {
     if (selectedMember) {
       const statusList = getMemberMonthlyStatusList(selectedMember.id, receipts, selectedMember.shareQty || 1, selectedMember.memberNo);
-      const dueList = statusList.filter(s => (s.status === 'due' || s.status === 'partial') && s.schedule.id <= '2026-08');
+      const dueList = statusList.filter(s => (s.status === 'due' || s.status === 'partial') && s.schedule.id <= getCurrentRunningMonthId());
       
       if (dueList.length > 0) {
         // Auto-select ALL due months so user doesn't lose any due selection
@@ -197,8 +197,13 @@ export const CollectPaymentView: React.FC = () => {
 
   const handleClearSelection = () => {
     setIsManualAmount(false);
-    // Keep first schedule as default
-    const firstSchedId = dueMonthsList.length > 0 ? dueMonthsList[0].schedule.id : memberSchedule[0]?.id || '2025-11';
+    // Keep first unpaid schedule as default
+    const firstUnpaid = memberMonthlyStatus.find(s => s.status !== 'paid');
+    const firstSchedId = dueMonthsList.length > 0 
+      ? dueMonthsList[0].schedule.id 
+      : firstUnpaid 
+      ? firstUnpaid.schedule.id 
+      : memberSchedule[0]?.id || '2025-11';
     setSelectedMonthIds([firstSchedId]);
   };
 
@@ -563,7 +568,7 @@ export const CollectPaymentView: React.FC = () => {
 
               {/* 12-Month Interactive Grid with Multi-Select Checkboxes */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-                {memberMonthlyStatus.map((item) => {
+                {memberMonthlyStatus.filter(item => item.status !== 'paid').map((item) => {
                   const isPaid = item.status === 'paid';
                   const isSelected = !isPaid && selectedMonthIds.includes(item.schedule.id);
                   const isPartial = item.status === 'partial';
