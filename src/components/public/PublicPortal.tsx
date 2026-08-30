@@ -21,9 +21,11 @@ import {
   Send,
   RefreshCw,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertTriangle
 } from 'lucide-react';
 import { LoginView } from '../auth/LoginView';
+import { getMemberMonthlyStatusList, getCurrentRunningMonthId } from '../../utils/monthlySchedule';
 
 type PortalView = 'home' | 'member_search' | 'login';
 type VerifStep = 'nid_verify' | 'pin_set' | 'pin_login' | 'otp_verify';
@@ -703,6 +705,28 @@ export const PublicPortal: React.FC = () => {
                     ) : (
                       /* Authenticated & Verified Member Details View */
                       <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-sm space-y-6 animate-in fade-in duration-300">
+                        {(() => {
+                           const statusList = getMemberMonthlyStatusList(searchedMember.id, receipts, searchedMember.shareQty || 1, searchedMember.memberNo);
+                           const runningMonthId = getCurrentRunningMonthId();
+                           const runningMonthStatus = statusList.find(s => s.schedule.id === runningMonthId);
+                           const isRunningMonthDue = runningMonthStatus && runningMonthStatus.status !== 'paid';
+                           const today = new Date();
+                           const currentDay = today.getDate();
+                           const showDuesReminder = isRunningMonthDue && currentDay >= 1 && currentDay <= 15;
+                           return (
+                             <>
+                               {showDuesReminder && (
+                                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
+                                   <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+                                   <div>
+                                     <h4 className="font-bold text-amber-900">আপনার বকেয়া পরিশোধ করুন!</h4>
+                                     <p className="text-sm text-amber-800">চলতি মাসের কিস্তি এখনো পরিশোধিত হয়নি। অনুগ্রহ করে ১-১৫ তারিখের মধ্যে পরিশোধ করুন।</p>
+                                   </div>
+                                 </div>
+                               )}
+                             </>
+                           );
+                        })()}
                         
                         {/* High Security Status Bar */}
                         <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-3 text-emerald-800 text-xs font-semibold">
