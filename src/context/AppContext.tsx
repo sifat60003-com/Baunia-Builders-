@@ -562,7 +562,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           mobile: n.mobile || '',
           address: n.address || '',
           percentage: Number(n.percentage) || 0,
-          photoUrl: n.photo_url || undefined,
+          photoUrl: n.photo_url || n.photoUrl || (m as any).nominee_photo || (m as any).nominee_photo_url || undefined,
         }))
       : [];
 
@@ -575,7 +575,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           nidBirthReg: nomineeDetails.nidBirthReg,
           mobile: nomineeDetails.mobile,
           address: m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
-          percentage: 100
+          percentage: 100,
+          photoUrl: (m as any).nominee_photo || (m as any).nominee_photo_url || undefined
         });
       } else {
         const first = { ...nominees[0] };
@@ -583,6 +584,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         first.relation = nomineeDetails.relation;
         first.nidBirthReg = nomineeDetails.nidBirthReg;
         first.mobile = nomineeDetails.mobile;
+        first.photoUrl = first.photoUrl || (m as any).nominee_photo || (m as any).nominee_photo_url || undefined;
         nominees = [first, ...nominees.slice(1)];
       }
     } else if (m.nominee_name && nominees.length === 0) {
@@ -594,6 +596,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         mobile: m.nominee_mobile || m.nominee_phone || m.nominee_contact || m.mobile || '',
         address: m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
         percentage: Number(m.nominee_share_percent) || Number(m.nominee_percentage) || 100,
+        photoUrl: (m as any).nominee_photo || (m as any).nominee_photo_url || undefined
       });
     }
 

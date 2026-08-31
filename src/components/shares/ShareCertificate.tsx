@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   ArrowLeft, 
@@ -10,7 +10,9 @@ import {
   FileText,
   MapPin,
   Heart,
-  HelpCircle
+  HelpCircle,
+  Camera,
+  Upload
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { formatCurrency, formatDate, toBnDigits } from '../../utils/formatters';
@@ -23,12 +25,17 @@ export const ShareCertificate: React.FC = () => {
     setSelectedCertMemberId, 
     setActiveTab, 
     settings,
-    language 
+    language,
+    updateMember,
+    showToast
   } = useApp();
 
   const [currentCertMemberId, setCurrentCertMemberId] = useState(
     selectedCertMemberId || members[0]?.id || ''
   );
+
+  const memberPhotoInputRef = useRef<HTMLInputElement>(null);
+  const nomineePhotoInputRef = useRef<HTMLInputElement>(null);
 
   const member = members.find(m => m.id === currentCertMemberId) || members[0];
 
@@ -57,12 +64,95 @@ export const ShareCertificate: React.FC = () => {
     percentage: 100
   };
 
+  const nomineePhotoUrl = 
+    primaryNominee?.photoUrl || 
+    (primaryNominee as any)?.photo || 
+    (primaryNominee as any)?.imageUrl ||
+    member.nominee_photo || 
+    (member as any)?.nomineePhoto || 
+    (member as any)?.nominee_photo_url || 
+    (member as any)?.nomineePhotoUrl || 
+    '';
+
   const watermarkSrc = (settings?.logoUrl && !settings.logoUrl.includes('1787927051112')) 
     ? settings.logoUrl 
     : defaultLogo;
 
+  // Handler for Member Photo Upload directly on certificate
+  const handleMemberPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && member) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('ছবি ফাইলের সাইজ ৫MB এর বেশি হতে পারবে না!', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        updateMember(member.id, { photoUrl: result });
+        showToast('সদস্যের ছবি সফলভাবে যুক্ত ও সংরক্ষণ করা হয়েছে!', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handler for Nominee Photo Upload directly on certificate
+  const handleNomineePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && member) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('ছবি ফাইলের সাইজ ৫MB এর বেশি হতে পারবে না!', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        let updatedNominees = [...(member.nominees || [])];
+        if (updatedNominees.length === 0) {
+          updatedNominees = [{
+            id: `NOM-${member.id}-1`,
+            name: primaryNominee.name || 'নমিনী',
+            relation: primaryNominee.relation || 'নমিনী',
+            nidBirthReg: primaryNominee.nidBirthReg || '',
+            mobile: primaryNominee.mobile || '',
+            address: primaryNominee.address || member.presentAddress || 'বাউনিয়া, তুরাগ, ঢাকা',
+            percentage: 100,
+            photoUrl: result
+          }];
+        } else {
+          updatedNominees[0] = {
+            ...updatedNominees[0],
+            photoUrl: result
+          };
+        }
+        updateMember(member.id, { 
+          nominees: updatedNominees,
+          nominee_photo: result
+        });
+        showToast('নমিনির ছবি সফলভাবে যুক্ত ও সংরক্ষণ করা হয়েছে!', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12">
+      {/* Hidden file inputs for direct photo uploads */}
+      <input
+        type="file"
+        ref={memberPhotoInputRef}
+        onChange={handleMemberPhotoUpload}
+        accept="image/*"
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={nomineePhotoInputRef}
+        onChange={handleNomineePhotoUpload}
+        accept="image/*"
+        className="hidden"
+      />
+
       {/* Dynamic Style block for Portrait A4 printing */}
       <style>{`
         @media print {
@@ -113,6 +203,24 @@ export const ShareCertificate: React.FC = () => {
           .print-card .photo-container {
             width: 76px !important;
             height: 98px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background-color: white !important;
+            overflow: hidden !important;
+            border-width: 2px !important;
+          }
+          .print-card .photo-container img {
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 100% !important;
+            min-height: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
+            object-fit: cover !important;
+            display: block !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .print-card .photo-label {
             margin-top: 2px !important;
@@ -158,14 +266,14 @@ export const ShareCertificate: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Member Picker */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-semibold">সদস্য নির্বাচন:</span>
+            <span className="text-xs text-slate-500 font-semibold">সদস্য:</span>
             <select
               value={currentCertMemberId}
               onChange={(e) => setCurrentCertMemberId(e.target.value)}
-              className="py-1.5 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-hidden"
+              className="py-1.5 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-hidden cursor-pointer"
             >
               {members.map(m => (
                 <option key={m.id} value={m.id}>
@@ -174,6 +282,27 @@ export const ShareCertificate: React.FC = () => {
               ))}
             </select>
           </div>
+
+          {/* Quick Photo Upload Buttons */}
+          <button
+            type="button"
+            onClick={() => nomineePhotoInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs rounded-xl transition cursor-pointer"
+            title="এই সদস্যের মনোনীত ব্যক্তির ছবি আপলোড করুন"
+          >
+            <Camera className="w-3.5 h-3.5 text-emerald-600" />
+            <span>নমিনির ছবি</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => memberPhotoInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-bold text-xs rounded-xl transition cursor-pointer"
+            title="সদস্যের ছবি আপলোড বা পরিবর্তন করুন"
+          >
+            <Camera className="w-3.5 h-3.5 text-blue-600" />
+            <span>সদস্যের ছবি</span>
+          </button>
 
           <button
             onClick={handlePrint}
@@ -291,21 +420,32 @@ export const ShareCertificate: React.FC = () => {
               <div className="bg-slate-50/60 rounded-xl p-2.5 border border-slate-200">
                 <div className="grid grid-cols-2 gap-2.5 items-center">
                   {/* Member Photo */}
-                  <div className="flex flex-col items-center">
+                  <div className="flex flex-col items-center group relative">
                     <div className="w-20 h-25 sm:w-22 sm:h-27 bg-white border-2 border-blue-900 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs shrink-0 photo-container">
                       {member.photoUrl ? (
                         <img
                           src={member.photoUrl}
                           alt={member.nameBn}
                           className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
                         />
                       ) : (
-                        <div className="text-center p-1 text-slate-300">
-                          <User className="w-8 h-8 mx-auto opacity-40 text-blue-900" />
-                          <span className="text-[8px] font-bold block text-slate-400 mt-0.5">ফটো পাওয়া যায়নি</span>
+                        <div className="text-center p-1 text-slate-300 flex flex-col items-center justify-center h-full w-full">
+                          <User className="w-8 h-8 opacity-40 text-blue-900" />
+                          <span className="text-[8px] font-bold block text-slate-400 mt-0.5">ছবি নেই</span>
                         </div>
                       )}
+
+                      {/* Interactive upload overlay in web view (hidden in print) */}
+                      <button
+                        type="button"
+                        onClick={() => memberPhotoInputRef.current?.click()}
+                        className="no-print absolute inset-0 bg-blue-950/60 text-white opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition cursor-pointer p-1"
+                        title="সদস্যের ছবি আপলোড বা পরিবর্তন করুন"
+                      >
+                        <Camera className="w-4 h-4 mb-0.5" />
+                        <span className="text-[7px] font-bold leading-tight text-center">ছবি আপলোড</span>
+                      </button>
                     </div>
                     <span className="text-[8px] sm:text-[9px] font-bold text-blue-950 mt-1 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-200 photo-label">
                       সদস্যের ছবি
@@ -313,21 +453,32 @@ export const ShareCertificate: React.FC = () => {
                   </div>
 
                   {/* Nominee Photo */}
-                  <div className="flex flex-col items-center">
+                  <div className="flex flex-col items-center group relative">
                     <div className="w-20 h-25 sm:w-22 sm:h-27 bg-white border-2 border-emerald-800 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs shrink-0 photo-container">
-                      {primaryNominee.photoUrl ? (
+                      {nomineePhotoUrl ? (
                         <img
-                          src={primaryNominee.photoUrl}
+                          src={nomineePhotoUrl}
                           alt="Nominee"
                           className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
                         />
                       ) : (
-                        <div className="text-center p-1 text-slate-300">
-                          <User className="w-8 h-8 mx-auto opacity-40 text-emerald-800" />
-                          <span className="text-[8px] font-bold block text-slate-400 mt-0.5">ফটো পাওয়া যায়নি</span>
+                        <div className="text-center p-1 text-slate-300 flex flex-col items-center justify-center h-full w-full">
+                          <User className="w-8 h-8 opacity-40 text-emerald-800" />
+                          <span className="text-[8px] font-bold block text-slate-400 mt-0.5">ছবি নেই</span>
                         </div>
                       )}
+
+                      {/* Interactive upload overlay in web view (hidden in print) */}
+                      <button
+                        type="button"
+                        onClick={() => nomineePhotoInputRef.current?.click()}
+                        className="no-print absolute inset-0 bg-emerald-950/60 text-white opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition cursor-pointer p-1"
+                        title="নমিনির ছবি আপলোড বা পরিবর্তন করুন"
+                      >
+                        <Camera className="w-4 h-4 mb-0.5" />
+                        <span className="text-[7px] font-bold leading-tight text-center">ছবি আপলোড</span>
+                      </button>
                     </div>
                     <span className="text-[8px] sm:text-[9px] font-bold text-emerald-800 mt-1 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200 photo-label">
                       নমিনির ছবি
