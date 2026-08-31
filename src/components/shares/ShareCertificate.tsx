@@ -223,12 +223,12 @@ export const ShareCertificate: React.FC = () => {
           <div className="grid grid-cols-12 gap-2 pb-4 border-b-2 border-blue-950 items-center">
             {/* Logo left */}
             <div className="col-span-3 sm:col-span-2 flex justify-start">
-              <Logo size="lg" showText={false} />
+              <Logo size="xl" showText={false} />
             </div>
 
             {/* Central Corporate Banner */}
             <div className="col-span-6 sm:col-span-8 text-center space-y-1">
-              <h1 className="text-2xl sm:text-4xl font-black text-blue-950 tracking-tight">
+              <h1 className="text-2xl sm:text-4xl font-black text-blue-950 tracking-[0.25em] sm:tracking-[0.52em] pl-[0.25em] sm:pl-[0.52em] whitespace-nowrap">
                 বাউনিয়া বিল্ডার্স
               </h1>
               <div className="text-[10px] sm:text-sm font-bold text-blue-800 uppercase tracking-widest leading-none">
