@@ -414,8 +414,14 @@ export const ShareCertificate: React.FC = () => {
                   <strong className="text-blue-950 font-black text-sm sm:text-base underline underline-offset-4 decoration-amber-500">
                     {member.nameBn}
                   </strong>
-                  {member.nameEn && <span className="font-bold text-xs"> ({member.nameEn})</span>}, পিতা:{' '}
-                  <strong>{member.fatherName}</strong>, মাতা: <strong>{member.motherName}</strong>, জাতীয় পরিচয়পত্র/জন্মনিবন্ধন নং:{' '}
+                  {member.nameEn && <span className="font-bold text-xs"> ({member.nameEn})</span>},{' '}
+                  {member.spouseName && (!member.fatherName || member.fatherName === '—' || member.fatherName === 'নাই' || member.fatherName.includes('স্বামী')) ? (
+                    <>স্বামী: <strong>{member.spouseName.replace(/^\(স্বামী\)\s*/, '')}</strong></>
+                  ) : member.spouseName && member.fatherName && member.fatherName !== '—' ? (
+                    <>পিতা: <strong>{member.fatherName}</strong>, স্বামী: <strong>{member.spouseName}</strong></>
+                  ) : (
+                    <>পিতা: <strong>{member.fatherName || '—'}</strong></>
+                  )}, মাতা: <strong>{member.motherName}</strong>, জাতীয় পরিচয়পত্র/জন্মনিবন্ধন নং:{' '}
                   <span className="font-mono font-bold text-slate-900">{member.nid}</span>, স্থায়ী ঠিকানা:{' '}
                   <span className="font-normal text-slate-700">{member.permanentAddress}</span>।
                 </p>

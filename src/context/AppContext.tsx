@@ -389,10 +389,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             safeSaveToLocalStorage(LOCAL_STORAGE_KEY, parsedData);
           }
 
-          // NID AND PROFILE DETAILS MIGRATION (Ensures members in storage have complete profile details)
+          // NID AND PROFILE DETAILS MIGRATION (Ensures members in storage have complete profile details and accurate NIDs)
           const needsProfileUpdate = parsedData.members && Array.isArray(parsedData.members) && parsedData.members.some((m: any) => {
             const memberNoNum = Number(m.memberNo || m.no || (m.id ? String(m.id).replace('BB-', '') : 0));
             const ext = memberExtDetails[memberNoNum];
+            const raw = rawMembersList.find((r: any) => Number(r.no) === memberNoNum);
+            if (raw && raw.nid && m.nid !== raw.nid) return true;
+            if (raw && raw.nameBn && m.nameBn !== raw.nameBn) return true;
             if (!ext) return false;
             const isPlaceholder = (val: any) => {
               if (!val) return true;
@@ -406,6 +409,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             return (
               (extFatherReal && m.fatherName !== ext.fatherName) ||
               (extMotherReal && m.motherName !== ext.motherName) ||
+              (ext.spouseName && m.spouseName !== ext.spouseName) ||
               (extDobReal && m.dob !== ext.dob) ||
               (ext.gender && m.gender !== ext.gender)
             );
@@ -424,7 +428,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
           const needsNomineeUpdate = !parsedData.settings || !parsedData.settings.isNomineeDetailsUpdated_V2;
 
-          if (!parsedData.settings.isJoinDateUpdated_V16 || needsProfileUpdate || needsJoinDateUpdate || needsNomineeUpdate) {
+          if (!parsedData.settings.isProfileNidUpdated_V3 || needsProfileUpdate || needsJoinDateUpdate || needsNomineeUpdate) {
+            parsedData.settings.isProfileNidUpdated_V3 = true;
             parsedData.settings.isJoinDateUpdated_V16 = true;
             parsedData.settings.isNomineeDetailsUpdated_V2 = true;
             if (parsedData.members && Array.isArray(parsedData.members)) {
@@ -468,9 +473,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                   return {
                     ...m,
                     memberNo: memberNoNum,
+                    nameBn: (rawMember && rawMember.nameBn) ? rawMember.nameBn : m.nameBn,
                     nameEn: (ext.nameEn && !ext.nameEn.startsWith('Member ')) ? ext.nameEn : (m.nameEn || `Member ${memberNoNum}`),
-                    fatherName: (ext.fatherName && !isPlaceholder(ext.fatherName)) ? ext.fatherName : (m.fatherName || '—'),
+                    fatherName: (ext.fatherName && !isPlaceholder(ext.fatherName)) ? ext.fatherName : (ext.spouseName ? `(স্বামী) ${ext.spouseName}` : (m.fatherName || '—')),
                     motherName: (ext.motherName && !isPlaceholder(ext.motherName)) ? ext.motherName : (m.motherName || '—'),
+                    spouseName: ext.spouseName || m.spouseName || '',
                     dob: (ext.dob && ext.dob !== '1990-01-01' && ext.dob !== '1985-01-01') ? ext.dob : (m.dob || '1990-01-01'),
                     occupation: ext.occupation || m.occupation || 'ব্যবসায়ী',
                     presentAddress: ext.presentAddress || m.presentAddress || 'বাউনিয়া, তুরাগ, ঢাকা',
@@ -486,6 +493,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 return {
                   ...m,
                   memberNo: m.memberNo ? Number(m.memberNo) : memberNoNum,
+                  nameBn: (rawMember && rawMember.nameBn) ? rawMember.nameBn : m.nameBn,
+                  nid: (rawMember && rawMember.nid) ? rawMember.nid : (m.nid || `NID-${memberNoNum}`),
                   religion: m.religion || 'ইসলাম',
                   nationality: m.nationality || 'বাংলাদেশী',
                   joinDate: joinDate,

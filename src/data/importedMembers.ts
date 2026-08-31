@@ -68,8 +68,8 @@ export const rawMembersList: RawMemberRecord[] = [
   { no: 51, shareQty: 1, nameBn: 'মোঃ শফিকুল ইসলাম', mobile: '01786247566', nid: '8258072423', nomineeName: 'লামিয়া আক্তার', nomineeNid: '6479772326' },
   { no: 52, shareQty: 1, nameBn: 'মোঃ লিটন হোসেন', mobile: '01766229390', nid: '7786880471', nomineeName: 'মারুফ আলম মৃদুল', nomineeNid: '2429859875' },
   { no: 53, shareQty: 1, nameBn: 'মারুফ আলম মৃদুল', mobile: '01975565021', nid: '2429859875', nomineeName: 'মোঃ লিটন হোসেন', nomineeNid: '7786880471' },
-  { no: 54, shareQty: 1, nameBn: 'সুভা বেগম', mobile: '01846961869', nid: '5075655067', nomineeName: 'মোঃ রিপন', nomineeNid: '3724402643' },
-  { no: 55, shareQty: 1, nameBn: 'মোঃ সুজন', mobile: '+96897168390', nid: '6961363057', nomineeName: 'জাহেদা বেগম', nomineeNid: '2359516628' },
+  { no: 54, shareQty: 1, nameBn: 'সুক্তা বেগম', mobile: '01846961869', nid: '5075655067', nomineeName: 'মোঃ রিপন', nomineeNid: '3724402643' },
+  { no: 55, shareQty: 1, nameBn: 'মোঃ সুজন', mobile: '+96897168390', nid: '5961363057', nomineeName: 'জাহেদা বেগম', nomineeNid: '2359516628' },
   { no: 56, shareQty: 1, nameBn: 'মোঃ সেলিম আহমেদ', mobile: '01717924080', nid: '3719398715', nomineeName: 'শিমু আক্তার', nomineeNid: '4619414099' },
   { no: 57, shareQty: 1, nameBn: 'আবদুর রাজ্জাক', mobile: '01724824512', nid: '9119390640', nomineeName: 'রোকেয়া আক্তার প্রিয়া', nomineeNid: '1975564582' },
   { no: 58, shareQty: 1, nameBn: 'ফাতেমা বেগম', mobile: '01913247649', nid: '5069436433', nomineeName: 'মোঃ ফরহাদ হোসেন', nomineeNid: '3719449401' },
@@ -121,6 +121,7 @@ export const memberExtDetails: Record<number, {
   nameEn: string;
   fatherName: string;
   motherName: string;
+  spouseName?: string;
   dob: string;
   occupation: string;
   presentAddress: string;
@@ -210,6 +211,7 @@ export const memberExtDetails: Record<number, {
   9: {
     nameEn: 'REHANA AKTER',
     fatherName: '—',
+    spouseName: 'এনামুল হক',
     motherName: 'ছেনোয়ারা খাতুন',
     dob: '1977-10-12',
     occupation: 'গৃহিণী',
@@ -220,6 +222,7 @@ export const memberExtDetails: Record<number, {
   10: {
     nameEn: 'AYESHA SULTANA',
     fatherName: '—',
+    spouseName: 'এনাম হায়দার',
     motherName: 'কানিজ ফাতেমা',
     dob: '1987-03-17',
     occupation: 'গৃহিণী',
@@ -900,6 +903,7 @@ export const memberExtDetails: Record<number, {
   78: {
     nameEn: 'MST. KOLPONA KHATUN',
     fatherName: '—',
+    spouseName: 'মোঃ কলিম উদ্দিন',
     motherName: 'মোসাঃ রাফেজা বেগম',
     dob: '1990-03-06',
     occupation: 'গৃহিণী',
@@ -909,7 +913,8 @@ export const memberExtDetails: Record<number, {
   },
   79: {
     nameEn: 'MD. REZAUL',
-    fatherName: '—',
+    fatherName: 'বাদশা মোল্লা',
+    spouseName: 'বাদশা মোল্লা',
     motherName: 'মোসাঃ সালেহা খাতুন',
     dob: '1983-08-01',
     occupation: 'ব্যবসা',
@@ -1118,9 +1123,9 @@ export const generateMembersFromRaw = (): Member[] => {
       memberNo: m.no,
       nameBn: m.nameBn,
       nameEn: details.nameEn,
-      fatherName: details.fatherName,
+      fatherName: (details.fatherName && details.fatherName !== '—') ? details.fatherName : (details.spouseName ? `(স্বামী) ${details.spouseName}` : (details.fatherName || '—')),
       motherName: details.motherName,
-      spouseName: '',
+      spouseName: details.spouseName || '',
       dob: details.dob,
       gender: details.gender,
       nid: m.nid || `NID-${m.no}`,

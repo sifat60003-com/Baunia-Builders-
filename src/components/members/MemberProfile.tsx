@@ -566,8 +566,12 @@ export const MemberProfile: React.FC = () => {
             
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <span className="text-slate-400 block mb-0.5">পিতার নাম:</span>
-                <span className="font-bold text-slate-900">{member.fatherName}</span>
+                <span className="text-slate-400 block mb-0.5">
+                  {member.spouseName && (!member.fatherName || member.fatherName === '—' || member.fatherName.includes('স্বামী')) ? 'স্বামীর নাম:' : 'পিতার নাম:'}
+                </span>
+                <span className="font-bold text-slate-900">
+                  {(!member.fatherName || member.fatherName === '—') && member.spouseName ? member.spouseName : member.fatherName}
+                </span>
               </div>
               <div>
                 <span className="text-slate-400 block mb-0.5">মাতার নাম:</span>
