@@ -17,6 +17,7 @@ import {
 import { Logo } from '../common/Logo';
 import { formatCurrency, formatDate, toBnDigits } from '../../utils/formatters';
 import defaultLogo from '../../assets/images/baunia_builders_logo_1787932825880.jpg';
+import { compressImage } from '../../utils/imageCompressor';
 
 export const ShareCertificate: React.FC = () => {
   const { 
@@ -91,36 +92,36 @@ export const ShareCertificate: React.FC = () => {
     : defaultLogo;
 
   // Handler for Member Photo Upload directly on certificate
-  const handleMemberPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMemberPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && member) {
-      if (file.size > 5 * 1024 * 1024) {
-        showToast('ছবি ফাইলের সাইজ ৫MB এর বেশি হতে পারবে না!', 'error');
+      if (file.size > 10 * 1024 * 1024) {
+        showToast('ছবি ফাইলের সাইজ ১০MB এর বেশি হতে পারবে না!', 'error');
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setLocalMemberPhoto(result);
-        updateMember(member.id, { photoUrl: result });
+      try {
+        const compressed = await compressImage(file, 480, 480, 0.75);
+        setLocalMemberPhoto(compressed);
+        updateMember(member.id, { photoUrl: compressed });
         showToast('সদস্যের ছবি সফলভাবে যুক্ত ও সংরক্ষণ করা হয়েছে!', 'success');
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Failed to compress member photo on certificate:', err);
+        showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+      }
     }
   };
 
   // Handler for Nominee Photo Upload directly on certificate
-  const handleNomineePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNomineePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && member) {
-      if (file.size > 5 * 1024 * 1024) {
-        showToast('ছবি ফাইলের সাইজ ৫MB এর বেশি হতে পারবে না!', 'error');
+      if (file.size > 10 * 1024 * 1024) {
+        showToast('ছবি ফাইলের সাইজ ১০MB এর বেশি হতে পারবে না!', 'error');
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setLocalNomineePhoto(result);
+      try {
+        const compressed = await compressImage(file, 480, 480, 0.75);
+        setLocalNomineePhoto(compressed);
         let updatedNominees = [...(member.nominees || [])];
         if (updatedNominees.length === 0) {
           updatedNominees = [{
@@ -131,21 +132,23 @@ export const ShareCertificate: React.FC = () => {
             mobile: primaryNominee.mobile || '',
             address: primaryNominee.address || member.presentAddress || 'বাউনিয়া, তুরাগ, ঢাকা',
             percentage: 100,
-            photoUrl: result
+            photoUrl: compressed
           }];
         } else {
           updatedNominees[0] = {
             ...updatedNominees[0],
-            photoUrl: result
+            photoUrl: compressed
           };
         }
         updateMember(member.id, { 
           nominees: updatedNominees,
-          nominee_photo: result
+          nominee_photo: compressed
         });
         showToast('নমিনির ছবি সফলভাবে যুক্ত ও সংরক্ষণ করা হয়েছে!', 'success');
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Failed to compress nominee photo on certificate:', err);
+        showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+      }
     }
   };
 

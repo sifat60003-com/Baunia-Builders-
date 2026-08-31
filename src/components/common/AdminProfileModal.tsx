@@ -14,6 +14,7 @@ import {
   Link as LinkIcon,
   Save
 } from 'lucide-react';
+import { compressImage } from '../../utils/imageCompressor';
 
 interface AdminProfileModalProps {
   isOpen: boolean;
@@ -41,21 +42,23 @@ export const AdminProfileModal: React.FC<AdminProfileModalProps> = ({ isOpen, on
 
   if (!isOpen) return null;
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('ছবির সাইজ সর্বোচ্চ ৫ মেগাবাইট (5MB) হতে পারবে', 'warning');
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('ছবির সাইজ সর্বোচ্চ ১০ মেগাবাইট (10MB) হতে পারবে', 'warning');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAvatar(reader.result as string);
+    try {
+      const compressed = await compressImage(file, 400, 400, 0.75);
+      setAvatar(compressed);
       showToast('ছবি প্রিভিউ লোড হয়েছে! সংরক্ষণ করতে নিচের "সংরক্ষণ করুন" বাটনে চাপুন', 'info');
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Failed to compress avatar:', err);
+      showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+    }
   };
 
   const handleRemovePhoto = () => {

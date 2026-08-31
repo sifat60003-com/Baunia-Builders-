@@ -37,6 +37,7 @@ import {
   TOTAL_SCHEDULE_AMOUNT,
   isReceiptForMemberId 
 } from '../../utils/monthlySchedule';
+import { compressImage } from '../../utils/imageCompressor';
 
 export const MemberProfile: React.FC = () => {
   const { 
@@ -78,20 +79,21 @@ export const MemberProfile: React.FC = () => {
 
 
   // Direct Photo Upload Handler
-  const handleDirectPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDirectPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && member) {
-      if (file.size > 5 * 1024 * 1024) {
-        showToast('ছবি ফাইলের সাইজ ৫MB এর বেশি হতে পারবে না!', 'error');
+      if (file.size > 10 * 1024 * 1024) {
+        showToast('ছবি ফাইলের সাইজ ১০MB এর বেশি হতে পারবে না!', 'error');
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        updateMember(member.id, { photoUrl: result });
+      try {
+        const compressed = await compressImage(file, 480, 480, 0.75);
+        updateMember(member.id, { photoUrl: compressed });
         showToast('সদস্যের ছবি সফলভাবে আপলোড ও চিহ্নিত করা হয়েছে!', 'success');
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Failed to compress photo:', err);
+        showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+      }
     }
   };
 
@@ -800,19 +802,21 @@ export const MemberProfile: React.FC = () => {
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            if (file.size > 2 * 1024 * 1024) {
-                              showToast('ফাইলের সাইজ ২MB এর বেশি হতে পারবে না!', 'error');
+                            if (file.size > 10 * 1024 * 1024) {
+                              showToast('ফাইলের সাইজ ১০MB এর বেশি হতে পারবে না!', 'error');
                               return;
                             }
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setNomineePhoto(reader.result as string);
+                            try {
+                              const compressed = await compressImage(file, 480, 480, 0.75);
+                              setNomineePhoto(compressed);
                               showToast('নমিনির ছবি সফলভাবে আপলোড হয়েছে!', 'success');
-                            };
-                            reader.readAsDataURL(file);
+                            } catch (err) {
+                              console.error('Failed to compress nominee photo:', err);
+                              showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+                            }
                           }
                         }}
                         className="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"

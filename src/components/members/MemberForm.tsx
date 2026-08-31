@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Nominee, Gender, MemberStatus } from '../../types';
 import { formatCurrency, toBnDigits } from '../../utils/formatters';
+import { compressImage } from '../../utils/imageCompressor';
 
 export const MemberForm: React.FC = () => {
   const { 
@@ -220,49 +221,55 @@ export const MemberForm: React.FC = () => {
     );
   };
 
-  const handleMemberPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMemberPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('ছবির সাইজ ৫MB এর কম হতে হবে', 'warning');
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('ছবির সাইজ ১০MB এর কম হতে হবে', 'warning');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoUrl(reader.result as string);
+    try {
+      const compressed = await compressImage(file, 480, 480, 0.75);
+      setPhotoUrl(compressed);
       showToast('সদস্যের ছবি আপলোড হয়েছে', 'success');
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Failed to compress photo:', err);
+      showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+    }
   };
 
-  const handleMemberPhotoBackUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMemberPhotoBackUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('ছবির সাইজ ৫MB এর কম হতে হবে', 'warning');
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('ছবির সাইজ ১০MB এর কম হতে হবে', 'warning');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoBackUrl(reader.result as string);
+    try {
+      const compressed = await compressImage(file, 640, 640, 0.75);
+      setPhotoBackUrl(compressed);
       showToast('NID/আইডি কার্ডের পিছনের অংশের ছবি আপলোড হয়েছে', 'success');
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Failed to compress photo back:', err);
+      showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+    }
   };
 
-  const handleNomineePhotoUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNomineePhotoUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('ছবির সাইজ ৫MB এর কম হতে হবে', 'warning');
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('ছবির সাইজ ১০MB এর কম হতে হবে', 'warning');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      handleUpdateNominee(index, 'photoUrl', reader.result as string);
+    try {
+      const compressed = await compressImage(file, 480, 480, 0.75);
+      handleUpdateNominee(index, 'photoUrl', compressed);
       showToast('নমিনির ছবি আপলোড হয়েছে', 'success');
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Failed to compress nominee photo:', err);
+      showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+    }
   };
 
   // Form Submit Handler

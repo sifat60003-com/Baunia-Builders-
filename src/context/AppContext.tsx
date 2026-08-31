@@ -199,6 +199,83 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const LOCAL_STORAGE_KEY = 'BAUNIA_BUILDERS_DATA_V4';
 const AUTH_SESSION_KEY = 'BAUNIA_BUILDERS_AUTH_SESSION_V2';
 
+// Helper to safely persist data to local storage with quota fallback
+const safeSaveToLocalStorage = (key: string, data: any) => {
+  try {
+    // 1. Clean legacy storage keys to free up space
+    localStorage.removeItem('BAUNIA_BUILDERS_DATA_V1');
+    localStorage.removeItem('BAUNIA_BUILDERS_DATA_V2');
+    localStorage.removeItem('BAUNIA_BUILDERS_DATA_V3');
+
+    // 2. Direct save attempt
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (err: any) {
+    try {
+      // Quota exceeded fallback: sanitize payload by trimming audit logs, notifications, and heavy base64 strings
+      const sanitizedData = {
+        ...data,
+        auditLogs: (data.auditLogs || []).slice(0, 30),
+        notifications: (data.notifications || []).slice(0, 20),
+        members: (data.members || []).map((m: any) => {
+          let photoUrl = m.photoUrl;
+          if (typeof photoUrl === 'string' && photoUrl.startsWith('data:') && photoUrl.length > 80000) {
+            photoUrl = undefined;
+          }
+          let photoBackUrl = m.photoBackUrl;
+          if (typeof photoBackUrl === 'string' && photoBackUrl.startsWith('data:') && photoBackUrl.length > 80000) {
+            photoBackUrl = undefined;
+          }
+          return {
+            ...m,
+            photoUrl,
+            photoBackUrl,
+          };
+        }),
+      };
+      localStorage.setItem(key, JSON.stringify(sanitizedData));
+    } catch (fallbackErr) {
+      try {
+        // Minimal core backup (members, finances, settings, users)
+        const minimalData = {
+          settings: data.settings,
+          users: data.users,
+          members: (data.members || []).map((m: any) => ({
+            id: m.id,
+            memberNo: m.memberNo,
+            no: m.no,
+            nameBn: m.nameBn,
+            nameEn: m.nameEn,
+            mobile: m.mobile,
+            nid: m.nid,
+            shareQty: m.shareQty,
+            currentDeposit: m.currentDeposit,
+            currentDue: m.currentDue,
+            status: m.status,
+            joinDate: m.joinDate,
+            fatherName: m.fatherName,
+            motherName: m.motherName,
+            presentAddress: m.presentAddress,
+            permanentAddress: m.permanentAddress,
+            nominees: m.nominees
+          })),
+          shares: data.shares,
+          receipts: data.receipts,
+          incomes: data.incomes,
+          expenses: data.expenses,
+          fdrs: data.fdrs,
+          transactions: data.transactions,
+          monthlyDues: data.monthlyDues,
+          notifications: [],
+          auditLogs: []
+        };
+        localStorage.setItem(key, JSON.stringify(minimalData));
+      } catch (e) {
+        console.warn('Storage quota full; state safely maintained in memory & cloud database.');
+      }
+    }
+  }
+};
+
 const getInitialAuthSession = (usersList: User[]) => {
   try {
     const stored = localStorage.getItem(AUTH_SESSION_KEY);
@@ -309,7 +386,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             }
             
             // Save the reset state back to local storage
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsedData));
+            safeSaveToLocalStorage(LOCAL_STORAGE_KEY, parsedData);
           }
 
           // NID AND PROFILE DETAILS MIGRATION (Ensures members in storage have complete profile details)
@@ -417,7 +494,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               });
             }
             // Save migrated state to local storage
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsedData));
+            safeSaveToLocalStorage(LOCAL_STORAGE_KEY, parsedData);
           }
         }
         
@@ -1123,25 +1200,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Sync to local storage
   useEffect(() => {
-    try {
-      const dataToSave = {
-        settings,
-        users,
-        members,
-        shares,
-        receipts,
-        incomes,
-        expenses,
-        fdrs,
-        transactions,
-        monthlyDues,
-        notifications,
-        auditLogs,
-      };
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-    } catch (e) {
-      console.error('Failed to sync to local storage:', e);
-    }
+    const dataToSave = {
+      settings,
+      users,
+      members,
+      shares,
+      receipts,
+      incomes,
+      expenses,
+      fdrs,
+      transactions,
+      monthlyDues,
+      notifications,
+      auditLogs,
+    };
+    safeSaveToLocalStorage(LOCAL_STORAGE_KEY, dataToSave);
   }, [settings, users, members, shares, receipts, incomes, expenses, fdrs, transactions, monthlyDues, notifications, auditLogs]);
 
   // Keyboard shortcut Ctrl+K for search

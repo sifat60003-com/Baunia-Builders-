@@ -17,6 +17,7 @@ import {
   Upload
 } from 'lucide-react';
 import { UserRole, User } from '../../types';
+import { compressImage } from '../../utils/imageCompressor';
 
 export const UserManagement: React.FC = () => {
   const { 
@@ -63,21 +64,23 @@ export const UserManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('ছবি সর্বোচ্চ ৫ মেগাবাইট হতে পারবে', 'warning');
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('ছবি সর্বোচ্চ ১০ মেগাবাইট হতে পারবে', 'warning');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAvatar(reader.result as string);
+    try {
+      const compressed = await compressImage(file, 400, 400, 0.75);
+      setAvatar(compressed);
       showToast('ছবি যুক্ত হয়েছে', 'info');
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Failed to compress avatar:', err);
+      showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+    }
   };
 
   const handleSave = (e: React.FormEvent) => {

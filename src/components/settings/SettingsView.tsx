@@ -28,6 +28,7 @@ import {
 import { SystemSettings } from '../../types';
 import defaultLogo from '../../assets/images/baunia_builders_logo_1787932825880.jpg';
 import { getSupabaseCredentials, saveSupabaseCredentials, isSupabaseConfigured, supabase } from '../../lib/supabase';
+import { compressImage } from '../../utils/imageCompressor';
 
 export const SettingsView: React.FC = () => {
   const { 
@@ -54,21 +55,23 @@ export const SettingsView: React.FC = () => {
   const [adminAvatar, setAdminAvatar] = useState(currentUser.avatar || '');
   const [isAdminSaving, setIsAdminSaving] = useState(false);
 
-  const handleAdminPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAdminPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('ছবির সাইজ সর্বোচ্চ ৫ মেগাবাইট (5MB) হতে পারবে', 'warning');
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('ছবির সাইজ সর্বোচ্চ ১০ মেগাবাইট (10MB) হতে পারবে', 'warning');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAdminAvatar(reader.result as string);
+    try {
+      const compressed = await compressImage(file, 400, 400, 0.75);
+      setAdminAvatar(compressed);
       showToast('ছবি লোড হয়েছে! "প্রোফাইল সংরক্ষণ" বাটনে চাপুন', 'info');
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Failed to compress admin avatar:', err);
+      showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+    }
   };
 
   const handleSaveAdminProfile = (e: React.FormEvent) => {
@@ -187,7 +190,7 @@ export const SettingsView: React.FC = () => {
 
   // Full Database JSON Backup Export
   const handleExportBackup = () => {
-    const rawData = localStorage.getItem('BAUNIA_BUILDERS_DATA_V1');
+    const rawData = localStorage.getItem('BAUNIA_BUILDERS_DATA_V4') || localStorage.getItem('BAUNIA_BUILDERS_DATA_V1');
     if (!rawData) {
       showToast('কোনো ডাটা পাওয়া যায়নি', 'warning');
       return;
@@ -214,7 +217,7 @@ export const SettingsView: React.FC = () => {
         const text = event.target?.result as string;
         const parsed = JSON.parse(text);
         if (parsed.members && parsed.receipts) {
-          localStorage.setItem('BAUNIA_BUILDERS_DATA_V1', text);
+          localStorage.setItem('BAUNIA_BUILDERS_DATA_V4', text);
           showToast('ডাটাবেজ সফলভাবে রিস্টোর হয়েছে! পেজ রিলোড হচ্ছে...', 'success');
           setTimeout(() => window.location.reload(), 1200);
         } else {
@@ -419,15 +422,17 @@ export const SettingsView: React.FC = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setFormData(prev => ({ ...prev, logoUrl: reader.result as string }));
+                          try {
+                            const compressed = await compressImage(file, 500, 500, 0.8);
+                            setFormData(prev => ({ ...prev, logoUrl: compressed }));
                             showToast('নতুন লোগো লোড হয়েছে! "সেটিংস সংরক্ষণ করুন" বাটনে চাপুন', 'info');
-                          };
-                          reader.readAsDataURL(file);
+                          } catch (err) {
+                            console.error('Failed to compress logo:', err);
+                            showToast('লোগো ফাইল প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+                          }
                         }
                       }}
                       className="hidden"
