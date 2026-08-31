@@ -535,13 +535,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Excludes nested JSON/array relations like 'nominees' but correctly preserves NULL columns (since typeof null === 'object')
   const getTableColumns = (row: any): string[] => {
     if (!row || typeof row !== 'object') return [];
-    return Object.keys(row).filter(key => {
+    const keys = Object.keys(row).filter(key => {
       const val = row[key];
       if (val === null) return true;
       if (Array.isArray(val)) return false;
       if (typeof val === 'object') return false; // Filter out nested relations
       return true;
     });
+    if (!keys.includes('nid')) keys.push('nid');
+    if (!keys.includes('photo_url')) keys.push('photo_url');
+    return keys;
   };
 
   
