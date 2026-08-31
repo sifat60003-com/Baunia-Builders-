@@ -81,6 +81,8 @@ export interface Member {
   share_qty?: number;
   share_value?: number;
   qr_code?: string;
+  religion?: string;
+  nationality?: string;
 }
 
 export type ShareTransactionType = 'initial' | 'additional' | 'transfer' | 'refund';

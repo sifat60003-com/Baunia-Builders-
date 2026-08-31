@@ -354,7 +354,9 @@ export const MemberList: React.FC = () => {
                           <div className="font-semibold text-slate-800">{member.nominees[0].name}</div>
                           {member.nominees[0].nidBirthReg && (
                             <div className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded inline-block">
-                              NID: {member.nominees[0].nidBirthReg}
+                              {member.nominees[0].nidBirthReg.trim().length === 17 
+                                ? (language === 'bn' ? 'জন্ম নিবন্ধন' : 'Birth Reg') 
+                                : (language === 'bn' ? 'এনআইডি' : 'NID')}: {member.nominees[0].nidBirthReg}
                             </div>
                           )}
                         </div>

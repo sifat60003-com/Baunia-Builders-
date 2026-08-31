@@ -589,6 +589,14 @@ export const MemberProfile: React.FC = () => {
                   {translations[language][member.gender] || (member.gender === 'female' ? (language === 'bn' ? 'মহিলা' : 'Female') : member.gender === 'other' ? (language === 'bn' ? 'অন্যান্য' : 'Other') : (language === 'bn' ? 'পুরুষ' : 'Male'))}
                 </span>
               </div>
+              <div>
+                <span className="text-slate-400 block mb-0.5">ধর্ম:</span>
+                <span className="font-bold text-slate-900">{(member as any).religion || 'ইসলাম'}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block mb-0.5">জাতীয়তা:</span>
+                <span className="font-bold text-slate-900">{(member as any).nationality || 'বাংলাদেশী'}</span>
+              </div>
             </div>
           </div>
 
@@ -747,7 +755,11 @@ export const MemberProfile: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">NID / জন্ম নিবন্ধন নং</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {nomineeNid && nomineeNid.trim().length === 17 
+                      ? 'জন্ম নিবন্ধন নং (১৭ ডিজিট)' 
+                      : 'NID নং (১৭ এর কম ডিজিট)'}
+                  </label>
                   <input
                     type="text"
                     value={nomineeNid}
@@ -755,6 +767,9 @@ export const MemberProfile: React.FC = () => {
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 font-mono"
                     placeholder="আইডি নম্বর লিখুন"
                   />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    ১৭ ডিজিটের হলে জন্ম নিবন্ধন এবং কম হলে এনআইডি হিসেবে গণ্য হবে।
+                  </p>
                 </div>
 
                 <div className="sm:col-span-2">
@@ -892,7 +907,11 @@ export const MemberProfile: React.FC = () => {
                           <span className="font-mono font-bold text-slate-800">{nominee.mobile || 'প্রযোজ্য নয়'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block mb-0.5">এনআইডি:</span>
+                          <span className="text-slate-400 block mb-0.5">
+                            {nominee.nidBirthReg && nominee.nidBirthReg.trim().length === 17 
+                              ? (language === 'bn' ? 'জন্ম নিবন্ধন:' : 'Birth Reg:') 
+                              : (language === 'bn' ? 'এনআইডি:' : 'NID:')}
+                          </span>
                           <span className="font-mono font-bold text-slate-800">{nominee.nidBirthReg || 'প্রযোজ্য নয়'}</span>
                         </div>
                         <div className="col-span-2">

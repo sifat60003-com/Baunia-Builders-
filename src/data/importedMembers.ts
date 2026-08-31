@@ -1,4 +1,5 @@
 import { Member, ShareTransaction } from '../types';
+import { nomineeExtDetails } from './nomineesData';
 
 export interface RawMemberRecord {
   no: number;
@@ -116,28 +117,1020 @@ export const rawMembersList: RawMemberRecord[] = [
   { no: 96, shareQty: 1, nameBn: 'মোঃ বাবুল মিয়া', mobile: '01946955234', nid: '2819384468', nomineeName: 'মোছাঃ তানজিরা জাহান বেবী', nomineeNid: '5563830156' }
 ];
 
+export const memberExtDetails: Record<number, {
+  nameEn: string;
+  fatherName: string;
+  motherName: string;
+  dob: string;
+  occupation: string;
+  presentAddress: string;
+  permanentAddress: string;
+  gender: 'male' | 'female';
+}> = {
+  1: {
+    nameEn: 'MD. MAHBUB SARKAR',
+    fatherName: 'মোঃ রিয়াজ উদ্দিন সরকার',
+    motherName: 'ফরিদা আক্তার',
+    dob: '1994-12-06',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং- ৫/৩, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং- ৫/৩, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  2: {
+    nameEn: 'MD. IMAM KHAN',
+    fatherName: 'মোঃ ছাদেক খাঁন',
+    motherName: 'মিসেস মাফিয়া বেগম',
+    dob: '1989-12-17',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং- ১৮১০৫/৬, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং- ১৮১০৫/৬, gram: বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  3: {
+    nameEn: 'ABU RAIHAN',
+    fatherName: 'নুরুজ্জামান',
+    motherName: 'সায়দা জামান',
+    dob: '1995-01-01',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  4: {
+    nameEn: 'MAHABOBUL HOQUE',
+    fatherName: 'সুরু মিয়া',
+    motherName: 'ছেনোয়ারা খাতুন',
+    dob: '1979-01-01',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-বড় বাড়ী, গ্রামঃ বান্দের জলা, পোঃ আলকরা, থানাঃ চৌদ্দগ্রাম, জেলাঃ কুমিল্লা',
+    gender: 'male'
+  },
+  5: {
+    nameEn: 'SEFALY AKTER',
+    fatherName: 'মোঃ নুরুজ্জামান',
+    motherName: 'সায়েদা বেগম',
+    dob: '1990-02-26',
+    occupation: 'গৃহিণী',
+    presentAddress: 'বাসা/হোল্ডিং-, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  6: {
+    nameEn: 'FAYAJA SULTANA RIKTA',
+    fatherName: 'সাইফ উদ্দিন ভূঞা',
+    motherName: 'কানিজ ফাতেমা',
+    dob: '1996-05-28',
+    occupation: 'গৃহিণী',
+    presentAddress: 'বাসা/হোল্ডিং-৪২, ব্লক-বি, গ্রামঃ পূর্ব বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৪২, ব্লক-বি, গ্রামঃ পূর্ব বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  7: {
+    nameEn: 'ISMAT JAHAN',
+    fatherName: 'মাহবুবুল হক',
+    motherName: 'মেহেরুন নেছা',
+    dob: '1996-10-17',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'বাসা/হোল্ডিং-৪২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৪২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  8: {
+    nameEn: 'NUSRAT JAHAN',
+    fatherName: 'মাহবুবুল হক',
+    motherName: 'মেহেরুন নেছা',
+    dob: '1997-08-12',
+    occupation: 'ছাত্রী',
+    presentAddress: 'বাসা/হোল্ডিং-৪২,  ব্লক-বি, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৪২,  ব্লক-বি, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  9: {
+    nameEn: 'REHANA AKTER',
+    fatherName: '—',
+    motherName: 'ছেনোয়ারা খাতুন',
+    dob: '1977-10-12',
+    occupation: 'গৃহিণী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-ওসমান আলী মিয়া বাড়ী, গ্রামঃ জয়নাকান্দিপুর / জনারায়নপুর, পোঃ রাজাপুর ৩৯২৩, থানাঃ দাগনভূঁঞা, জেলাঃ ফেনী',
+    gender: 'female'
+  },
+  10: {
+    nameEn: 'AYESHA SULTANA',
+    fatherName: '—',
+    motherName: 'কানিজ ফাতেমা',
+    dob: '1987-03-17',
+    occupation: 'গৃহিণী',
+    presentAddress: 'বাসা/হোল্ডিং-, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-ই ব্লক-১৩৪, গ্রামঃ বিশ্ব ব্যাংক কলোনী, পোঃ ফিরোজ শাহ-৪২০৭, থানাঃ খুলশী, জেলাঃ চট্টগ্রাম',
+    gender: 'female'
+  },
+  11: {
+    nameEn: 'MD. MONIRUZZAMAN',
+    fatherName: 'মোঃ নুরুজ্জামান',
+    motherName: 'মোসাঃ সৈয়দ বানু',
+    dob: '1985-12-30',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-৫৭, রাস্তাঃ লেন ৩, ব্লক এ, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৫৭, রাস্তাঃ লেন ৩, ব্লক এ, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  12: {
+    nameEn: 'FARZANA AKTER LIPY',
+    fatherName: 'আব্দুল লতিফ',
+    motherName: 'রেহেনা বেগম',
+    dob: '1996-09-01',
+    occupation: 'গৃহিণী',
+    presentAddress: 'বাসা/হোল্ডিং-৫৭, রাস্তাঃ লেন ৩, ব্লক এ, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৫৭, রাস্তাঃ লেন ৩, ব্লক এ, gram: বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  13: {
+    nameEn: 'MD MONIR HOSEN',
+    fatherName: 'মোঃ দনু মিয়া',
+    motherName: 'মোসাঃ হাসিনা বেগম',
+    dob: '1980-07-19',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-১১, রাস্তাঃ লেন-৪, ব্লক-বি, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-১১, রাস্তাঃ লেন-৪, ব্লক-বি, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  14: {
+    nameEn: 'MORAD HOSSAIN',
+    fatherName: 'তোতা মিয়া',
+    motherName: 'সখিনা বিবি',
+    dob: '1981-05-01',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-১৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-১৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  15: {
+    nameEn: 'MD. FARHAD HOSSAIN',
+    fatherName: 'আব্দুল জব্বার',
+    motherName: 'ফাতেমা বেগম',
+    dob: '1984-11-10',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-২২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-২২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  16: {
+    nameEn: 'MD. MAMOUNUR RASHID',
+    fatherName: 'মোঃ সুন্দর আলী',
+    motherName: 'মোসাঃ জাহানারা বেগম',
+    dob: '1982-09-01',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-৩৫, gram: বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৩৫, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  17: {
+    nameEn: 'MD ABUL KALAM',
+    fatherName: 'ঠান্ডা মিয়া',
+    motherName: 'মর্জিনা বেগম',
+    dob: '1988-09-27',
+    occupation: 'ঠিকাদার',
+    presentAddress: 'রাস্তাঃ তোতা মিয়া সরণী, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'রাস্তাঃ তোতা মিয়া সরণী, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  18: {
+    nameEn: 'MOHAMMED NAZMUL HOSSAIN',
+    fatherName: 'মোহাম্মদ শহিদ উল্যাহ',
+    motherName: 'আনোয়ারা বেগম',
+    dob: '1979-12-29',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-শহিদ উল্যাহ ভেন্ডার এর বাড়ী, গ্রামঃ হারানিয়া, পোঃ বক্তার হাট-৪৩০০, থানাঃ সন্দ্বীপ, জেলাঃ চট্টগ্রাম',
+    gender: 'male'
+  },
+  19: {
+    nameEn: 'SUJAN MIAH',
+    fatherName: 'সিরাজ মিয়া',
+    motherName: 'রাজিয়া বেগম',
+    dob: '1982-08-05',
+    occupation: 'ঠিকাদার',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  20: {
+    nameEn: 'MOHAMMAD KAMRUZZAMAN',
+    fatherName: 'মোঃ হারুন অর রশিদ হাওলাদার',
+    motherName: 'মোসাঃ আমিরুন নেছা',
+    dob: '1975-02-10',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-০৫, গ্রামঃ রমজান কাঠী, পোঃ রমজান কাঠী-৮২১০, থানাঃ বাকেরগঞ্জ, জেলাঃ বরিশাল',
+    gender: 'male'
+  },
+  21: {
+    nameEn: 'MD BABU HOSEN',
+    fatherName: 'আলাউদ্দিন মন্ডল',
+    motherName: 'জোস্না বিবি',
+    dob: '1982-01-01',
+    occupation: 'ঠিকাদার',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ উত্তর পশ্চিম রুকিন্দিপুর, পোঃ জামালগঞ্জ, থানাঃ আক্কেলপুর, জেলাঃ জয়পুরহাট',
+    gender: 'male'
+  },
+  22: {
+    nameEn: 'MD. SHAMIM HOSIN',
+    fatherName: 'মোঃ ফজর আলী',
+    motherName: 'মোসাঃ রাাহিমা খাতুন',
+    dob: '1984-12-21',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'বাসা/হোল্ডিং-৪,  ব্লক-এ, রাস্তাঃ ৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৪,  ব্লক-এ, রাস্তাঃ ৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  23: {
+    nameEn: 'MD RAKIB HASAN',
+    fatherName: 'মোঃ ফজর আলী',
+    motherName: 'রাাহিমা',
+    dob: '1982-09-10',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-৪,  ব্লক-এ, রাস্তাঃ ৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৪,  ব্লক-এ, রাস্তাঃ ৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  24: {
+    nameEn: 'MD. MONIR HOSSAN',
+    fatherName: 'মোঃ ইহছাক',
+    motherName: 'ফজিলেতের নেছা',
+    dob: '1974-12-20',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৪৫, গ্রামঃ উত্তর উদমদী, পোঃ বরদিয়া-৩৬০২, থানাঃ মতলব, জেলাঃ চাঁদপুর',
+    gender: 'male'
+  },
+  25: {
+    nameEn: 'MD HANIF HOWLADER',
+    fatherName: 'মোঃ আঃ করিম হাওলাদার',
+    motherName: 'রাাহিমা বেগম',
+    dob: '1975-03-25',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ ভরসাকাঠী, পোঃ ভরসাকাঠী-৮২২৪, থানাঃ উজিরপুর, জেলাঃ বরিশাল',
+    gender: 'male'
+  },
+  26: {
+    nameEn: 'RABIUL ALAM',
+    fatherName: 'কুদ্দুছ মোল্ল্যা',
+    motherName: 'হালিমা বেগম',
+    dob: '1986-02-11',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ চরচন্ডা, পোঃ সোনাপাড়া-৮১৩২, থানাঃ কাশিয়ানী, জেলাঃ গোপালগঞ্জ',
+    gender: 'male'
+  },
+  27: {
+    nameEn: 'ROWSHAN ARA BEGUM',
+    fatherName: 'আব্দুল হোসাইন',
+    motherName: 'ছেনোয়ারা খাতুন',
+    dob: '1968-05-15',
+    occupation: 'গৃহিণী',
+    presentAddress: 'বাসা/হোল্ডিং-৭৫,  ব্লক-বি, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৭৫,  ব্লক-বি, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  28: {
+    nameEn: 'MD JASHIM UDDIN',
+    fatherName: 'সামসুদ্দিন',
+    motherName: 'হালিমা বেগম',
+    dob: '1987-02-02',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-২০,  ব্লক-এ, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-২০,  ব্লক-এ, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  29: {
+    nameEn: 'MD MASUM KHAN',
+    fatherName: 'মোঃ শুক্কুর আলী খান',
+    motherName: 'মোসাঃ মোর্শেদা বেগম',
+    dob: '1985-10-22',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-২,  ব্লক-সি, gram: বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-২,  ব্লক-সি, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  30: {
+    nameEn: 'MD. ALL AZGAR',
+    fatherName: 'মোঃ সিকিম আলী',
+    motherName: 'মোসাঃ দিলবাহার',
+    dob: '1988-01-04',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  31: {
+    nameEn: 'MD. RONY AHAMED',
+    fatherName: 'মোঃ সিকিম আলী',
+    motherName: 'দেলোয়ারা বেগম',
+    dob: '1995-10-13',
+    occupation: 'ঠিকাদার',
+    presentAddress: 'বাসা/হোল্ডিং-১৫/২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-১৫/২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  32: {
+    nameEn: 'MD ILIAS',
+    fatherName: 'মোঃ হাফিজ উদ্দিন',
+    motherName: 'হালিমা',
+    dob: '1989-08-11',
+    occupation: 'ঠিকাদার',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  33: {
+    nameEn: 'TAHER DAUYAN',
+    fatherName: 'আবেদ আলী দেওয়ান',
+    motherName: 'রেজিয়া খাতুন',
+    dob: '1968-09-04',
+    occupation: 'ঠিকাদার',
+    presentAddress: 'বাসা/হোল্ডিং-৩, লেন-২, ব্লক-বি, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৩, লেন-২, ব্লক-বি, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  34: {
+    nameEn: 'MD. JAVED DEWAN',
+    fatherName: 'তাহের দেওয়ান',
+    motherName: 'মোসাঃ জোনাকি',
+    dob: '1999-02-09',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-৩, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৩, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  35: {
+    nameEn: 'MD SHOHAG SHEKH',
+    fatherName: 'মোঃ চাঁদ মিয়া',
+    motherName: 'মোহসেনা আরা বেগম',
+    dob: '1985-03-02',
+    occupation: 'ঠিকাদার',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  36: {
+    nameEn: 'MD. SURUJ ALI',
+    fatherName: 'মাহতাব উদ্দিন',
+    motherName: 'আয়েশা',
+    dob: '1975-01-01',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ পূর্ব দাপুনিয়া, পোঃ গৌরীপুর-২২৭০, থানাঃ গৌরীপুর, জেলাঃ ময়মনসিংহ',
+    gender: 'male'
+  },
+  37: {
+    nameEn: 'MD. ALOMGIR DEWAN',
+    fatherName: 'মোঃ রমিজ উদ্দিন',
+    motherName: 'আছিমা বেগম',
+    dob: '1991-02-01',
+    occupation: 'ঠিকাদার',
+    presentAddress: 'বাসা/হোল্ডিং-০০, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-০০, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  38: {
+    nameEn: 'MOHAMMAD OLIULLAH',
+    fatherName: 'মোহাম্মদ আবুল মালেক',
+    motherName: 'জয়বাহার বেগম',
+    dob: '1985-02-03',
+    occupation: 'প্রবাসী',
+    presentAddress: 'গ্রামঃ বাদালদী, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাদালদী, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  39: {
+    nameEn: 'MD. JALAL UDDIN',
+    fatherName: 'মোঃ তৈনুছ আলী',
+    motherName: 'জাহানারা বেগম',
+    dob: '2000-01-01',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  40: {
+    nameEn: 'MD. KHOKON',
+    fatherName: 'আব্দুছ ছাত্তার (চৌধুরী মিয়া)',
+    motherName: 'জাহেদা খাতুন',
+    dob: '1987-07-05',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-ওহাব হোসেন সওদাগর বাড়ী, গ্রামঃ চর ভূতা, পোঃ ভবানীগঞ্জ-৩৭০২, থানাঃ লক্ষ্মীপুর, জেলাঃ লক্ষ্মীপুর',
+    gender: 'male'
+  },
+  41: {
+    nameEn: 'IBRAHIM HOSSAIN',
+    fatherName: 'আবুল হক',
+    motherName: 'রোকেয়া খাতুন',
+    dob: '1985-11-11',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ ভুরুনিয়া, পোঃ ভুরুনিয়া-৯৪৫০, থানাঃ श्यामনগর, জেলাঃ সাতক্ষীরা',
+    gender: 'male'
+  },
+  42: {
+    nameEn: 'MD. BELAL HOSSAIN',
+    fatherName: 'মোঃ শাহালম হোসেন',
+    motherName: 'মৃত মমতাজ বেগম',
+    dob: '1987-04-03',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  43: {
+    nameEn: 'MAHABUBA AKTER',
+    fatherName: 'মোঃ রিয়াজ উদ্দিন সরকার',
+    motherName: 'ফরিদা আক্তার',
+    dob: '2000-01-18',
+    occupation: 'ছাত্রী',
+    presentAddress: 'বাসা/হোল্ডিং-২৯, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-২৯, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  44: {
+    nameEn: 'TAMIJUDDIN',
+    fatherName: 'আবেদ আলী দেওয়ান',
+    motherName: 'রেজিয়া খাতুন',
+    dob: '1963-03-07',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'বাসা/হোল্ডিং-৩-বি, রাস্তাঃ ২, লেন-২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৩-বি, রাস্তাঃ ২, লেন-২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  45: {
+    nameEn: 'MD NASIR',
+    fatherName: 'আঃ ফজল মিয়া',
+    motherName: 'মুজিবুন নেছা',
+    dob: '1977-09-06',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-১, সেক্টর-১, পোঃ উত্তরা-১২৩০, থানাঃ বিমান বন্দর, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  46: {
+    nameEn: 'MD. SHAHADAT HOSSEN',
+    fatherName: 'মোঃ বশির উদ্দিন',
+    motherName: 'শাহনাজ হোসেন',
+    dob: '1999-11-06',
+    occupation: 'ছাত্র',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ গানধুরিয়া, পোঃ নগর কোন্ডা-১২১৬, থানাঃ সাভার, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  47: {
+    nameEn: 'JAHANARA AKTER',
+    fatherName: 'মোঃ খোরশেদ আলম',
+    motherName: 'আয়েশা বেগম',
+    dob: '1991-08-25',
+    occupation: 'গৃহিণী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  48: {
+    nameEn: 'MD FAIZUR RAHMAN KHAN',
+    fatherName: 'আব্দুল আজিজ খান',
+    motherName: 'জাহানারা বেগম',
+    dob: '1972-08-19',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'বাসা/হোল্ডিং-২, রাস্তা-১, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-২, রাস্তা-১, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  49: {
+    nameEn: 'RAMIJUDDIN',
+    fatherName: 'আবেদ আলী দেওয়ান',
+    motherName: 'রেজিয়া খাতুন',
+    dob: '1970-03-05',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'বাসা/হোল্ডিং-১, রাস্তাঃ ২,  ব্লক-বি, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-১, রাস্তাঃ ২,  ব্লক-বি, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  50: {
+    nameEn: 'ASLAM DEWAN',
+    fatherName: 'রমিজ উদ্দিন',
+    motherName: 'আসমা বেগম',
+    dob: '1983-04-20',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ উত্তর বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ উত্তর বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  51: {
+    nameEn: 'MD. SHFIKUL ISLAM',
+    fatherName: 'চান মিয়া',
+    motherName: 'অজিফা খাতুন',
+    dob: '1969-02-12',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-৯, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৯, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  52: {
+    nameEn: 'MD. LITON HOSSAIN',
+    fatherName: 'মোঃ আইয়ুব আলী',
+    motherName: 'নাসিমা বেগম',
+    dob: '1988-02-14',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ উত্তর বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ উত্তর বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  53: {
+    nameEn: 'MARUF ALAM MRIDUL',
+    fatherName: 'মাসুদ আলম',
+    motherName: 'মাসুমা আক্তার ডলি',
+    dob: '2006-07-05',
+    occupation: 'ছাত্র',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  54: {
+    nameEn: 'SUKTA BEGUM',
+    fatherName: 'মোস্তফা খোকন',
+    motherName: 'আজিমা খাতুন',
+    dob: '1989-01-01',
+    occupation: 'গৃহিণী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ গনু মিয়া সর্দার বাড়ী, গ্রামঃ অবির নগর, পোঃ লক্ষ্মীপুর-৩৭০০, থানাঃ লক্ষ্মীপুর সদর, জেলাঃ লক্ষ্মীপুর',
+    gender: 'female'
+  },
+  55: {
+    nameEn: 'MD. SUJON',
+    fatherName: 'আবদুস সাত্তার চৌধুরী',
+    motherName: 'জাহেদা বেগম',
+    dob: '1991-03-13',
+    occupation: 'প্রবাসী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ ওহাব হোসেনের বাড়ী, গ্রামঃ চরভুতু, পোঃ ভবানীগঞ্জ-৩৭০২, থানাঃ লক্ষ্মীপুর সদর, জেলাঃ লক্ষ্মীপুর',
+    gender: 'male'
+  },
+  56: {
+    nameEn: 'MD SALIM AHAMED',
+    fatherName: 'মোঃ সুলতান মিয়া',
+    motherName: 'মোসাঃ ফুলবানু',
+    dob: '1978-10-15',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'বাসা/হোল্ডিং-৪২, লেন-৩,  ব্লক-এ, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৪২, লেন-৩,  ব্লক-এ, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  57: {
+    nameEn: 'ABDUR RAJJAK',
+    fatherName: 'আনছার আলী',
+    motherName: 'তহুরা খাতুন',
+    dob: '1973-03-19',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-১৫/৪, রাস্তা-২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-১৫/৪, রাস্তা-২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  58: {
+    nameEn: 'FATEMA BEGUM',
+    fatherName: 'মোঃ করম আলী',
+    motherName: 'আমেনা খাতুন',
+    dob: '1966-02-05',
+    occupation: 'গৃহিণী',
+    presentAddress: 'বাসা/হোল্ডিং-২২, গ্রামঃ উত্তর বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-২২, gram: উত্তর বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  59: {
+    nameEn: 'NAZMUL HUDA',
+    fatherName: 'আব্দুল জলিল মোল্লা',
+    motherName: 'ফজিলাতুন নেছা',
+    dob: '1971-06-01',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ চরদিয়াটা, পোঃ পাতারচর-৮২৫০, থানাঃ মুলাদী, জেলাঃ বরিশাল',
+    gender: 'male'
+  },
+  60: {
+    nameEn: 'ADNAN JAIDY',
+    fatherName: 'নাজমুল হুদা',
+    motherName: 'মার্জিয়া হুদা',
+    dob: '2001-06-04',
+    occupation: 'ছাত্র',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  61: {
+    nameEn: 'MD HAZRAT ALI',
+    fatherName: 'মোঃ তোয়াজ উদ্দিন',
+    motherName: 'মোসাঃ ছবিরন নেছা',
+    dob: '1980-02-22',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ উত্তর বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ উত্তর বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  62: {
+    nameEn: 'MD DOULAT HOSSAIN',
+    fatherName: 'দুলাল মিয়া',
+    motherName: 'জবেদা খাতুন',
+    dob: '1963-08-11',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  63: {
+    nameEn: 'HARUN OR RASHID',
+    fatherName: 'মোঃ রেজাউল করিম',
+    motherName: 'হনুফা',
+    dob: '1997-01-01',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  64: {
+    nameEn: 'MD. FIROZ MIAH',
+    fatherName: 'মোঃ মজিবর রহমান',
+    motherName: 'ফিরোজা বেগম',
+    dob: '1997-11-30',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ দক্ষিণ পাড়া, নলিন, পোঃ হেমনগর-১৯৯২, থানাঃ গোপালপুর, জেলাঃ টাঙ্গাইল',
+    gender: 'male'
+  },
+  65: {
+    nameEn: 'MD. MAHAMUD MIA',
+    fatherName: 'মোঃ মান্নান মিয়া',
+    motherName: 'মোসাঃ মাকছুদা বেগম',
+    dob: '1999-10-10',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ ইসলামপুর, পোঃ পায়রাবন্দ-৫৪৬০, থানাঃ মিঠাপুকুর, জেলাঃ রংপুর',
+    gender: 'male'
+  },
+  66: {
+    nameEn: 'MD. RANAL HOSSAIN KHAN',
+    fatherName: 'নাসির উদ্দিন খান',
+    motherName: 'ফাতেমা বেগম',
+    dob: '1994-12-31',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ ফোজর বাড়ী, উত্তর খান, পোঃ উজামপুর-১২৩০, থানাঃ উত্তর খান, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ ফোজর বাড়ী, উত্তর khan, পোঃ উজামপুর-১২৩০, থানাঃ উত্তর খান, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  67: {
+    nameEn: 'MD. MAHBUBUR RAHMAN',
+    fatherName: 'মোঃ মিজানুর রহমান',
+    motherName: 'মিসেস ফজিলাতুননেছা',
+    dob: '1971-12-11',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ মোল্লার টেক, পোঃ মোল্লার টেক-১২৩০, থানাঃ দক্ষিণখান, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ মোল্লার টেক, পোঃ মোল্লার টেক-১২৩০, থানাঃ দক্ষিণখান, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  68: {
+    nameEn: 'MD. FARUCK HOSSAIN',
+    fatherName: 'মোঃ দুলাল হোসেন',
+    motherName: 'মোসাঃ ফাতেমা বেগম',
+    dob: '1984-12-20',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-৬২, গ্রামঃ উত্তরখান, ভূইয়া বাড়ী, পোঃ উত্তরখান -১২৩০, থানাঃ উত্তরখান, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৬২, গ্রামঃ উত্তরখান, ভূইয়া বাড়ী, পোঃ উত্তরখান -১২৩০, থানাঃ উত্তরখান, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  69: {
+    nameEn: 'MD. SUMON',
+    fatherName: 'মোঃ শহর আলী',
+    motherName: 'মোর্শেদা',
+    dob: '2001-01-01',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'বাসা/হোল্ডিং- ৫৩, গ্রামঃ ফরিদ মার্কেট পুরাককের, পোঃ আজমপুর-১২৩০, থানাঃ দক্ষিণখান, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং- ৫৩, গ্রামঃ ফরিদ মার্কেট পুরাককের, পোঃ আজমপুর-১২৩০, থানাঃ দক্ষিণখান, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  70: {
+    nameEn: 'MD. ROBIUL ISLAM RONY',
+    fatherName: 'মোঃ আঃ রব আকন',
+    motherName: 'নার্গিস বেগম',
+    dob: '1997-09-01',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ সরকার বাড়ী রোড, পুরাকৈর, পোঃ আজমপুর-১২৩০, থানাঃ দক্ষিণখান, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ সরকার বাড়ী রোড, পুরাকৈর, পোঃ আজমপুর-১২৩০, থানাঃ দক্ষিণখান, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  71: {
+    nameEn: 'PIPLU KARMAKAR',
+    fatherName: 'কানাই কর্মকার',
+    motherName: 'মিরা রানী কর্মকার',
+    dob: '1989-04-14',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ প্রেমবাগান, পোঃ দক্ষিণখান-১২৩০, থানাঃ দক্ষিণখান, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং- দাউদকান্দি, পোঃ দাউদকান্দি -৩৫১৬, থানাঃ দাউদকান্দি, জেলাঃ কুমিল্লা',
+    gender: 'male'
+  },
+  72: {
+    nameEn: 'MD ISHAK MIA',
+    fatherName: 'মোঃ জাবেদ আলী',
+    motherName: 'মোসাঃ সুফিয়া বেগম',
+    dob: '1974-04-02',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসাঃ ১৯-বি, রাস্তাঃ ১০, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  73: {
+    nameEn: 'MD AZAHAR ALI',
+    fatherName: 'বাচ্চু মিয়া',
+    motherName: 'ফুল বানু',
+    dob: '1980-06-20',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-২৪, রাস্তাঃ ০৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-২৪, রাস্তাঃ ০৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  74: {
+    nameEn: 'SHILA',
+    fatherName: 'মোঃ শহিদ',
+    motherName: 'মোসাঃ শাবানা আক্তার',
+    dob: '1988-01-01',
+    occupation: 'গৃহিণী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  75: {
+    nameEn: 'NAFISA SADAF',
+    fatherName: 'মোহাম্মদ নাজমুল হোসাইন',
+    motherName: 'ফারহানা বেগম',
+    dob: '2013-08-30',
+    occupation: 'ছাত্রী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-শহিদ উল্যাহ ভেন্ডার এর বাড়ী, গ্রামঃ হারানিয়া, পোঃ বক্তার হাট-৪৩০০, থানাঃ সন্দ্বীপ, জেলাঃ চট্টগ্রাম',
+    gender: 'female'
+  },
+  76: {
+    nameEn: 'MAHMUDA AKTER',
+    fatherName: 'মোঃ ফারুক আজম',
+    motherName: 'ফাতেমা খাতুন',
+    dob: '1998-09-21',
+    occupation: 'গৃহিণী',
+    presentAddress: 'বাসা/হোল্ডিং- ৫/৩, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং- ৫/৩, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  77: {
+    nameEn: 'MD. KAWSER',
+    fatherName: 'হাজী আব্দুর রহিম',
+    motherName: 'পিয়ারা বেগম',
+    dob: '1987-11-19',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-১৪, গ্রাম/রাস্তাঃ ৩, সেক্টর-৩, পোঃ উত্তরা-১২৩০, থানাঃ উত্তরা, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ মুচাগড়া, পোঃ যাত্রাপুর-৩৫৪০, থানাঃ মুরাদনগর, জেলাঃ কুমিল্লা',
+    gender: 'male'
+  },
+  78: {
+    nameEn: 'MST. KOLPONA KHATUN',
+    fatherName: '—',
+    motherName: 'মোসাঃ রাফেজা বেগম',
+    dob: '1990-03-06',
+    occupation: 'গৃহিণী',
+    presentAddress: 'বাসা/হোল্ডিং-১৪, gram/রাস্তাঃ ৩, সেক্টর-৩, পোঃ উত্তরা-১২৩০, থানাঃ উত্তরা, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ মুচাগড়া, পোঃ যাত্রাপুর-৩৫৪০, থানাঃ মুরাদনগর, জেলাঃ কুমিল্লা',
+    gender: 'female'
+  },
+  79: {
+    nameEn: 'MD. REZAUL',
+    fatherName: '—',
+    motherName: 'মোসাঃ সালেহা খাতুন',
+    dob: '1983-08-01',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৭০৫/৬, গ্রামঃ দক্ষিণ কদমতলা, পোঃ দক্ষিণ কদমতলা-৯৩৩০, থানাঃ শরণখোলা, জেলাঃ বাগেরহাট',
+    gender: 'male'
+  },
+  80: {
+    nameEn: 'MD. MILON HOWLADER',
+    fatherName: 'আঃ ছালাম হাওলাদার',
+    motherName: 'নুপুর',
+    dob: '1987-03-16',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-বিসিক রোড, গ্রামঃ কাউনিয়া, পোঃ বরিশাল-৮২০০, থানাঃ বরিশাল সদর, জেলাঃ বরিশাল',
+    gender: 'male'
+  },
+  81: {
+    nameEn: 'MD. SOHEL CHOWDHURY',
+    fatherName: 'আব্দুল হাকিম চৌধুরী',
+    motherName: 'মৃত মমিলা খাতুন',
+    dob: '1984-01-01',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-৫তন, গ্রামঃ নেমতাবাদ, পোঃ নেমতাবাদ-৩৪৬৪, থানাঃ কসবা, জেলাঃ ব্রাহ্মণবাড়িয়া',
+    permanentAddress: 'বাসা/হোল্ডিং-৫৩৫, গ্রামঃ নেমতাবাদ, পোঃ নেমতাবাদ-৩৪৬৪, থানাঃ কসবা, জেলাঃ ব্রাহ্মণবাড়িয়া',
+    gender: 'male'
+  },
+  82: {
+    nameEn: 'FARHAN SADIQ TAHMID',
+    fatherName: 'মোঃ মাসুদ মিয়া',
+    motherName: 'লাইলী আক্তার',
+    dob: '2016-02-22',
+    occupation: 'ছাত্র',
+    presentAddress: 'বাসা/হোল্ডিং-৩৩, বাউনিয়া মেইন রোড, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৩৩, বাউনিয়া মেইন রোড, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  83: {
+    nameEn: 'ZAKIA SULTANA',
+    fatherName: 'মোঃ আঃ জব্বার',
+    motherName: 'ফাতেমা বেগম',
+    dob: '1988-10-12',
+    occupation: 'গৃহিণী',
+    presentAddress: 'বাসা/হোল্ডিং-২২, বাউনিয়া মেইন রোড, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-২২, বাউনিয়া মেইন রোড, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  84: {
+    nameEn: 'MD. SHAHIDUL ISKANDAR',
+    fatherName: 'আব্দুল কাইয়ুম',
+    motherName: 'দীপালী বেগম',
+    dob: '1976-02-20',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'বাসা/হোল্ডিং-১৫৫, গ্রামঃ মধ্য আজমপুর, পোঃ আজমপুর-১২৩০, থানাঃ দক্ষিণখান, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-১৫৫, গ্রামঃ মধ্য আজমপুর, পোঃ আজমপুর-১২৩০, থানাঃ দক্ষিণখান, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  85: {
+    nameEn: 'ABDUL HAKIM',
+    fatherName: 'মোঃ লাবু মিয়া',
+    motherName: 'হালিমা',
+    dob: '1982-12-31',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং- ৪, রাস্তা-২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং- ৪, রাস্তা-২, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  86: {
+    nameEn: 'MD MOKHTARUZZAMAN',
+    fatherName: 'মোঃ আব্দুস ছাত্তার',
+    motherName: 'মোসাঃ আসমনা বেগম',
+    dob: '1987-12-15',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ বেড়াকুটি, পোঃ বেড়াকুটি-৫৩০০, থানাঃ নীলফামারী সদর, জেলাঃ নীলফামারী',
+    permanentAddress: 'গ্রামঃ বেড়াকুটি, পোঃ বেড়াকুটি-৫৩০০, থানাঃ নীলফামারী সদর, জেলাঃ নীলফামারী',
+    gender: 'male'
+  },
+  87: {
+    nameEn: 'ABDUL KADIR',
+    fatherName: 'মোঃ আহাসান উল্লাহ মিয়া',
+    motherName: 'মোসাঃ সাজেদা বেগম',
+    dob: '1977-07-04',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ পোয়ালপাড়া, পোঃ পরশিনগর-১৪৬০, থানাঃ রূপগঞ্জ, জেলাঃ নারায়ণগঞ্জ',
+    permanentAddress: 'গ্রামঃ গোয়ালপাড়া, পোঃ পরশিনগর-১৪৬০, থানাঃ রূপগঞ্জ, জেলাঃ নারায়ণগঞ্জ',
+    gender: 'male'
+  },
+  88: {
+    nameEn: 'MD. ABDUL KARIM',
+    fatherName: 'মোঃ আকবর হোসেন',
+    motherName: 'নুরজাহান বেগম',
+    dob: '1992-01-04',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'গ্রামঃ আবাদিুর, পোঃ আবাদিুর-১৯১৩, থানাঃ দেলদুয়ার, জেলাঃ টাঙ্গাইল',
+    permanentAddress: 'গ্রামঃ আবাদিুর, পোঃ আবাদিুর-১৯১৩, থানাঃ দেলদুয়ার, জেলাঃ টাঙ্গাইল',
+    gender: 'male'
+  },
+  89: {
+    nameEn: 'MST. LOPA AKTER RIMI',
+    fatherName: 'সিকিম আলী',
+    motherName: 'দেলোয়ারা বেগম',
+    dob: '1993-06-14',
+    occupation: 'গৃহিণী',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'female'
+  },
+  90: {
+    nameEn: 'MD KAMAL HOSSAIN',
+    fatherName: 'মোঃ জহির আলী',
+    motherName: 'মোসাঃ মোনায়েরা বেগম',
+    dob: '1977-09-01',
+    occupation: 'ব্যবসা',
+    presentAddress: 'গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং- ২৩৩, গ্রামঃ আজমপুর, শাহকবির মাজার রোড, পোঃ আজমপুর-১২৩০, থানাঃ দক্ষিণখান, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  91: {
+    nameEn: 'MD. FORMAN HOSSAIN',
+    fatherName: 'ফজলুল হক',
+    motherName: 'মোসাঃ মিলন বেগম',
+    dob: '1981-05-01',
+    occupation: 'প্রবাসী',
+    presentAddress: 'বাসা/হোল্ডিং-১০, gram: বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-১০, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  92: {
+    nameEn: 'MD. ABDULLAH AL MAMUN',
+    fatherName: 'মোঃ আঃ মতিন',
+    motherName: 'হালিমা খাতুন',
+    dob: '1995-12-30',
+    occupation: 'চাকুরীজীবী',
+    presentAddress: 'বাসা/হোল্ডিং-৪,  ব্লক-এ, রাস্তাঃ ৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-৪,  ব্লক-এ, রাস্তাঃ ৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  93: {
+    nameEn: 'ABU BAKKAR SIDDIK',
+    fatherName: 'মোজাফফর হোসেন',
+    motherName: 'আসমা বেগম',
+    dob: '1984-12-04',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-২৭, রাস্তাঃ মেইন রোড, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-২৭, রাস্তাঃ মেইন রোড, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  94: {
+    nameEn: 'MD. SHAMSUL HAQUE',
+    fatherName: 'মোঃ মোকেশত আলী',
+    motherName: 'আফিয়া খাতুন',
+    dob: '1971-01-01',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং- ৫৪, লেন-৩,  ব্লক-এ, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং- ৫৪, লেন-৩,  ব্লক-এ, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  },
+  95: {
+    nameEn: 'MD. AL-MAMUN',
+    fatherName: 'মোঃ ফারুক আজম',
+    motherName: 'মোসাঃ ফাতেমা খাতুন',
+    dob: '1993-01-01',
+    occupation: 'ডাক্তার',
+    presentAddress: 'গ্রামঃ সাফাইশ্রী, পোঃ কাপাসিয়া-১৭৩০, থানাঃ কাপাসিয়া, জেলাঃ গাজীপুর',
+    permanentAddress: 'গ্রামঃ সাফাইশ্রী, পোঃ কাপাসিয়া-১৭৩০, থানাঃ কাপাসিয়া, জেলাঃ গাজীপুর',
+    gender: 'male'
+  },
+  96: {
+    nameEn: 'MD BABU MIA',
+    fatherName: 'মোঃ মজিবর রহমান',
+    motherName: 'মোসাঃ নুরজাহান',
+    dob: '1971-11-05',
+    occupation: 'ব্যবসা',
+    presentAddress: 'বাসা/হোল্ডিং-২৪-এ, রাস্তাঃ ৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    permanentAddress: 'বাসা/হোল্ডিং-২৪-এ, রাস্তাঃ ৪, গ্রামঃ বাউনিয়া, পোঃ বাদালদী-১২৩০, থানাঃ তুরাগ, জেলাঃ ঢাকা',
+    gender: 'male'
+  }
+};
+
 export const generateMembersFromRaw = (): Member[] => {
   return rawMembersList.map((m) => {
     const formattedId = `BB-${String(m.no).padStart(3, '0')}`;
     const sharePrice = 100000;
     const totalShareValue = m.shareQty * sharePrice;
 
+    const details = memberExtDetails[m.no] || {
+      nameEn: `Member ${m.no}`,
+      fatherName: '—',
+      motherName: '—',
+      dob: '1985-01-01',
+      occupation: 'ব্যবসায়ী',
+      presentAddress: 'বাউনিয়া, তুরাগ, ঢাকা-১২৩০',
+      permanentAddress: 'বাউনিয়া, তুরাগ, ঢাকা',
+      gender: 'male'
+    };
+
+    const nomineeDetails = nomineeExtDetails[m.no] || {
+      name: m.nomineeName,
+      relation: 'নমিনী',
+      nidBirthReg: m.nomineeNid,
+      mobile: m.mobile
+    };
+
     return {
       id: formattedId,
       memberNo: m.no,
       nameBn: m.nameBn,
-      nameEn: `Member ${m.no}`,
-      fatherName: '—',
-      motherName: '—',
+      nameEn: details.nameEn,
+      fatherName: details.fatherName,
+      motherName: details.motherName,
       spouseName: '',
-      dob: '1985-01-01',
-      gender: 'male',
+      dob: details.dob,
+      gender: details.gender,
       nid: m.nid || `NID-${m.no}`,
       mobile: m.mobile,
-      occupation: 'ব্যবসায়ী',
-      presentAddress: 'বাউনিয়া, তুরাগ, ঢাকা-১২৩০',
-      permanentAddress: 'বাউনিয়া, তুরাগ, ঢাকা',
-      joinDate: '2026-01-01',
+      occupation: details.occupation,
+      presentAddress: details.presentAddress,
+      permanentAddress: details.permanentAddress,
+      religion: (details as any).religion || 'ইসলাম',
+      nationality: (details as any).nationality || 'বাংলাদেশী',
+      joinDate: m.no >= 1 && m.no <= 76 ? '2025-11-01' : (m.no >= 77 && m.no <= 96 ? '2026-08-01' : '2026-01-01'),
       status: 'active',
       shareQty: m.shareQty,
       sharePrice: sharePrice,
@@ -149,10 +1142,10 @@ export const generateMembersFromRaw = (): Member[] => {
       nominees: [
         {
           id: `NOM-${formattedId}-1`,
-          name: m.nomineeName,
-          relation: 'নমিনী',
-          nidBirthReg: m.nomineeNid,
-          mobile: m.mobile,
+          name: nomineeDetails.name,
+          relation: nomineeDetails.relation,
+          nidBirthReg: nomineeDetails.nidBirthReg,
+          mobile: nomineeDetails.mobile,
           address: 'বাউনিয়া, তুরাগ, ঢাকা',
           percentage: 100
         }

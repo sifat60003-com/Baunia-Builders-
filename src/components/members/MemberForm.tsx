@@ -57,6 +57,8 @@ export const MemberForm: React.FC = () => {
   const [photoUrl, setPhotoUrl] = useState(existingMember?.photoUrl || '');
   const [photoBackUrl, setPhotoBackUrl] = useState(existingMember?.photoBackUrl || '');
   const [pin, setPin] = useState(existingMember?.pin || '');
+  const [religion, setReligion] = useState((existingMember as any)?.religion || 'ইসলাম');
+  const [nationality, setNationality] = useState((existingMember as any)?.nationality || 'বাংলাদেশী');
 
   // Membership & Share Fields
   const [joinDate, setJoinDate] = useState(existingMember?.joinDate || new Date().toISOString().split('T')[0]);
@@ -110,6 +112,8 @@ export const MemberForm: React.FC = () => {
         setPhotoUrl(existingMember.photoUrl || '');
         setPhotoBackUrl(existingMember.photoBackUrl || '');
         setPin(existingMember.pin || '');
+        setReligion((existingMember as any).religion || 'ইসলাম');
+        setNationality((existingMember as any).nationality || 'বাংলাদেশী');
         setJoinDate(existingMember.joinDate || new Date().toISOString().split('T')[0]);
         setStatus(existingMember.status || 'active');
         setShareQty(existingMember.shareQty || 1);
@@ -154,6 +158,8 @@ export const MemberForm: React.FC = () => {
         setPhotoUrl('');
         setPhotoBackUrl('');
         setPin('');
+        setReligion('ইসলাম');
+        setNationality('বাংলাদেশী');
         setJoinDate(new Date().toISOString().split('T')[0]);
         setStatus('active');
         setShareQty(1);
@@ -310,6 +316,8 @@ export const MemberForm: React.FC = () => {
       occupation: occupation.trim() || 'ব্যবসায়ী',
       presentAddress: presentAddress.trim(),
       permanentAddress: permanentAddress.trim(),
+      religion: religion.trim() || 'ইসলাম',
+      nationality: nationality.trim() || 'বাংলাদেশী',
       photoUrl: photoUrl.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
       photoBackUrl: photoBackUrl.trim() || undefined,
       joinDate,
@@ -499,6 +507,39 @@ export const MemberForm: React.FC = () => {
                 <option value="female">মহিলা (Female)</option>
                 <option value="other">অন্যান্য (Other)</option>
               </select>
+            </div>
+
+            {/* Religion */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                ধর্ম <span className="text-rose-500">*</span>
+              </label>
+              <select
+                value={religion}
+                onChange={(e) => setReligion(e.target.value)}
+                className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"
+              >
+                <option value="ইসলাম">ইসলাম</option>
+                <option value="সনাতন">সনাতন (হিন্দু)</option>
+                <option value="বৌদ্ধ">বৌদ্ধ</option>
+                <option value="খ্রিস্টান">খ্রিস্টান</option>
+                <option value="অন্যান্য">অন্যান্য</option>
+              </select>
+            </div>
+
+            {/* Nationality */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                জাতীয়তা <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={nationality}
+                onChange={(e) => setNationality(e.target.value)}
+                placeholder="বাংলাদেশী"
+                className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"
+              />
             </div>
 
             {/* NID */}
@@ -911,17 +952,22 @@ export const MemberForm: React.FC = () => {
                     />
                   </div>
 
-                  <div>
+                   <div>
                     <label className="block text-xs font-semibold text-slate-600 mb-1">
-                      এনআইডি / জন্ম নিবন্ধন নং
+                      {nominee.nidBirthReg && nominee.nidBirthReg.trim().length === 17 
+                        ? 'জন্ম নিবন্ধন নং (১৭ ডিজিট)' 
+                        : 'এনআইডি নং (১৭ এর কম ডিজিট)'}
                     </label>
                     <input
                       type="text"
                       value={nominee.nidBirthReg}
                       onChange={(e) => handleUpdateNominee(idx, 'nidBirthReg', e.target.value)}
-                      placeholder="19862692015000456"
+                      placeholder="আইডি নম্বর লিখুন"
                       className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium font-mono"
                     />
+                    <p className="text-[9px] text-slate-400 mt-0.5">
+                      ১৭ ডিজিট = জন্ম নিবন্ধন, ১৭ এর কম = এনআইডি।
+                    </p>
                   </div>
 
                   <div>

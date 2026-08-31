@@ -32,7 +32,8 @@ import {
   initialAuditLogs 
 } from '../data/mockData';
 import { translations } from '../utils/translations';
-import { rawMembersList, generateMembersFromRaw } from '../data/importedMembers';
+import { rawMembersList, generateMembersFromRaw, memberExtDetails } from '../data/importedMembers';
+import { nomineeExtDetails } from '../data/nomineesData';
 import { supabase, isSupabaseConfigured, getSupabaseCredentials, saveSupabaseCredentials } from '../lib/supabase';
 import { numberToWordsBn, numberToWordsEn } from '../utils/formatters';
 import { getMemberScheduleSummary } from '../utils/monthlySchedule';
@@ -310,6 +311,114 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             // Save the reset state back to local storage
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsedData));
           }
+
+          // NID AND PROFILE DETAILS MIGRATION (Ensures members in storage have complete profile details)
+          const needsProfileUpdate = parsedData.members && Array.isArray(parsedData.members) && parsedData.members.some((m: any) => {
+            const memberNoNum = Number(m.memberNo || m.no || (m.id ? String(m.id).replace('BB-', '') : 0));
+            const ext = memberExtDetails[memberNoNum];
+            if (!ext) return false;
+            const isPlaceholder = (val: any) => {
+              if (!val) return true;
+              const s = String(val).trim();
+              return s === '' || s === '—' || s === '-' || s === '–' || s === 'None' || s === 'null';
+            };
+            const extFatherReal = ext.fatherName && !isPlaceholder(ext.fatherName);
+            const extMotherReal = ext.motherName && !isPlaceholder(ext.motherName);
+            const extDobReal = ext.dob && ext.dob !== '1990-01-01' && ext.dob !== '1985-01-01';
+
+            return (
+              (extFatherReal && m.fatherName !== ext.fatherName) ||
+              (extMotherReal && m.motherName !== ext.motherName) ||
+              (extDobReal && m.dob !== ext.dob) ||
+              (ext.gender && m.gender !== ext.gender)
+            );
+          });
+
+          const needsJoinDateUpdate = parsedData.members && Array.isArray(parsedData.members) && parsedData.members.some((m: any) => {
+            const memberNoNum = Number(m.memberNo || m.no || (m.id ? String(m.id).replace('BB-', '') : 0));
+            if (memberNoNum >= 1 && memberNoNum <= 76) {
+              return m.joinDate !== '2025-11-01';
+            }
+            if (memberNoNum >= 77 && memberNoNum <= 96) {
+              return m.joinDate !== '2026-08-01';
+            }
+            return false;
+          });
+
+          const needsNomineeUpdate = !parsedData.settings || !parsedData.settings.isNomineeDetailsUpdated_V2;
+
+          if (!parsedData.settings.isJoinDateUpdated_V16 || needsProfileUpdate || needsJoinDateUpdate || needsNomineeUpdate) {
+            parsedData.settings.isJoinDateUpdated_V16 = true;
+            parsedData.settings.isNomineeDetailsUpdated_V2 = true;
+            if (parsedData.members && Array.isArray(parsedData.members)) {
+              parsedData.members = parsedData.members.map((m: any) => {
+                const memberNoNum = Number(m.memberNo || m.no || (m.id ? String(m.id).replace('BB-', '') : 0));
+                const joinDate = memberNoNum >= 1 && memberNoNum <= 76 
+                  ? '2025-11-01' 
+                  : (memberNoNum >= 77 && memberNoNum <= 96 ? '2026-08-01' : (m.joinDate || '2026-01-01'));
+                const rawMember = rawMembersList.find((rm: any) => Number(rm.no) === memberNoNum);
+                const ext = memberExtDetails[memberNoNum];
+                const nomineeDetails = nomineeExtDetails[memberNoNum];
+
+                let updatedNominees = m.nominees || [];
+                if (nomineeDetails) {
+                  if (!Array.isArray(updatedNominees) || updatedNominees.length === 0) {
+                    updatedNominees = [{
+                      id: `NOM-BB-${String(memberNoNum).padStart(3, '0')}-1`,
+                      name: nomineeDetails.name,
+                      relation: nomineeDetails.relation,
+                      nidBirthReg: nomineeDetails.nidBirthReg,
+                      mobile: nomineeDetails.mobile,
+                      address: m.presentAddress || 'বাউনিয়া, তুরাগ, ঢাকা',
+                      percentage: 100
+                    }];
+                  } else {
+                    const first = { ...updatedNominees[0] };
+                    first.name = nomineeDetails.name;
+                    first.relation = nomineeDetails.relation;
+                    first.nidBirthReg = nomineeDetails.nidBirthReg;
+                    first.mobile = nomineeDetails.mobile;
+                    updatedNominees = [first, ...updatedNominees.slice(1)];
+                  }
+                }
+
+                if (ext) {
+                  const isPlaceholder = (val: any) => {
+                    if (!val) return true;
+                    const s = String(val).trim();
+                    return s === '' || s === '—' || s === '-' || s === '–' || s === 'None' || s === 'null';
+                  };
+                  return {
+                    ...m,
+                    memberNo: memberNoNum,
+                    nameEn: (ext.nameEn && !ext.nameEn.startsWith('Member ')) ? ext.nameEn : (m.nameEn || `Member ${memberNoNum}`),
+                    fatherName: (ext.fatherName && !isPlaceholder(ext.fatherName)) ? ext.fatherName : (m.fatherName || '—'),
+                    motherName: (ext.motherName && !isPlaceholder(ext.motherName)) ? ext.motherName : (m.motherName || '—'),
+                    dob: (ext.dob && ext.dob !== '1990-01-01' && ext.dob !== '1985-01-01') ? ext.dob : (m.dob || '1990-01-01'),
+                    occupation: ext.occupation || m.occupation || 'ব্যবসায়ী',
+                    presentAddress: ext.presentAddress || m.presentAddress || 'বাউনিয়া, তুরাগ, ঢাকা',
+                    permanentAddress: ext.permanentAddress || m.permanentAddress || 'বাউনিয়া, তুরাগ, ঢাকা',
+                    gender: ext.gender || m.gender || 'male',
+                    nid: (rawMember && rawMember.nid) ? rawMember.nid : (m.nid || `NID-${memberNoNum}`),
+                    religion: (ext as any).religion || m.religion || 'ইসলাম',
+                    nationality: (ext as any).nationality || m.nationality || 'বাংলাদেশী',
+                    joinDate: joinDate,
+                    nominees: updatedNominees
+                  };
+                }
+                return {
+                  ...m,
+                  memberNo: m.memberNo ? Number(m.memberNo) : memberNoNum,
+                  religion: m.religion || 'ইসলাম',
+                  nationality: m.nationality || 'বাংলাদেশী',
+                  joinDate: joinDate,
+                  nominees: updatedNominees
+                };
+              });
+            }
+            // Save migrated state to local storage
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsedData));
+          }
         }
         
         return parsedData;
@@ -441,7 +550,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const shareQty = m.share_qty || 1;
     const calculatedDue = shareQty * 25000;
     
-    const nominees = m.nominees && Array.isArray(m.nominees) && m.nominees.length > 0
+    const memberNoNum = Number(m.member_no || (m.id ? String(m.id).replace('BB-', '') : 0));
+    const nomineeDetails = nomineeExtDetails[memberNoNum];
+
+    let nominees = m.nominees && Array.isArray(m.nominees) && m.nominees.length > 0
       ? m.nominees.map((n: any) => ({
           id: n.id || `NOM-${m.id}-${Math.random().toString(36).substring(2, 7)}`,
           name: n.name || '',
@@ -452,34 +564,77 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           percentage: Number(n.percentage) || 0,
           photoUrl: n.photo_url || undefined,
         }))
-      : (m.nominee_name ? [{
-          id: `NOM-${m.id}-1`,
-          name: m.nominee_name || '',
-          relation: m.nominee_relation || 'নমিনী',
-          nidBirthReg: m.nominee_nid || m.nominee_nid_birth_reg || '',
-          mobile: m.nominee_mobile || m.nominee_phone || m.nominee_contact || m.mobile || '',
-          address: m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
-          percentage: Number(m.nominee_share_percent) || Number(m.nominee_percentage) || 100,
-        }] : []);
+      : [];
 
-    const rawGender = String(m.gender || '').toLowerCase().trim();
+    if (nomineeDetails) {
+      if (nominees.length === 0) {
+        nominees.push({
+          id: `NOM-${m.id}-1`,
+          name: nomineeDetails.name,
+          relation: nomineeDetails.relation,
+          nidBirthReg: nomineeDetails.nidBirthReg,
+          mobile: nomineeDetails.mobile,
+          address: m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
+          percentage: 100
+        });
+      } else {
+        const first = { ...nominees[0] };
+        first.name = nomineeDetails.name;
+        first.relation = nomineeDetails.relation;
+        first.nidBirthReg = nomineeDetails.nidBirthReg;
+        first.mobile = nomineeDetails.mobile;
+        nominees = [first, ...nominees.slice(1)];
+      }
+    } else if (m.nominee_name && nominees.length === 0) {
+      nominees.push({
+        id: `NOM-${m.id}-1`,
+        name: m.nominee_name || '',
+        relation: m.nominee_relation || 'নমিনী',
+        nidBirthReg: m.nominee_nid || m.nominee_nid_birth_reg || '',
+        mobile: m.nominee_mobile || m.nominee_phone || m.nominee_contact || m.mobile || '',
+        address: m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
+        percentage: Number(m.nominee_share_percent) || Number(m.nominee_percentage) || 100,
+      });
+    }
+
+    const ext = memberExtDetails[memberNoNum];
+
+    const isPlaceholder = (val: any) => {
+      if (!val) return true;
+      const s = String(val).trim();
+      return s === '' || s === '—' || s === '-' || s === '–' || s === 'None' || s === 'null';
+    };
+
+    const nameEn = (ext && ext.nameEn && !ext.nameEn.startsWith('Member ')) ? ext.nameEn : (m.name_en || `Member ${memberNoNum}`);
+    const fatherName = (ext && ext.fatherName && !isPlaceholder(ext.fatherName)) ? ext.fatherName : (m.father_name || '—');
+    const motherName = (ext && ext.motherName && !isPlaceholder(ext.motherName)) ? ext.motherName : (m.mother_name || '—');
+    const dob = (ext && ext.dob && ext.dob !== '1990-01-01' && ext.dob !== '1985-01-01') ? ext.dob : (m.birth_date || m.dob || '1990-01-01');
+    const occupation = (ext && ext.occupation) ? ext.occupation : (m.occupation || 'ব্যবসায়ী');
+    const presentAddress = (ext && ext.presentAddress) ? ext.presentAddress : (m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা');
+    const permanentAddress = (ext && ext.permanentAddress) ? ext.permanentAddress : (m.permanent_address || 'বাউনিয়া, তুরাগ, ঢাকা');
+
+    const rawGender = (ext && ext.gender) ? ext.gender : String(m.gender || '').toLowerCase().trim();
     const gender: Gender = rawGender === 'female' || rawGender === 'মহিলা' ? 'female' : rawGender === 'other' || rawGender === 'অন্যান্য' ? 'other' : 'male';
+
+    const calculatedJoinDate = memberNoNum >= 1 && memberNoNum <= 76 
+      ? '2025-11-01' 
+      : (memberNoNum >= 77 && memberNoNum <= 96 ? '2026-08-01' : (m.join_date || '2026-01-01'));
 
     return {
       id: m.id,
-      memberNo: m.member_no,
+      memberNo: memberNoNum,
       nameBn: m.name_bn,
-      nameEn: m.name_en || `Member ${m.member_no}`,
-      fatherName: m.father_name || '—',
-      motherName: m.mother_name || '—',
+      nameEn: nameEn,
+      fatherName: fatherName,
+      motherName: motherName,
       spouseName: m.spouse_name || '',
       mobile: m.mobile || '',
       altMobile: m.alt_mobile || '',
       email: m.email || '',
-      occupation: m.occupation || 'ব্যবসায়ী',
-      presentAddress: m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
-      permanentAddress: m.permanent_address || 'বাউনিয়া, তুরাগ, ঢাকা',
-      joinDate: m.join_date || '2026-01-01',
+      occupation: occupation,
+      presentAddress: presentAddress,
+      permanentAddress: permanentAddress,
+      joinDate: calculatedJoinDate,
       status: m.status || 'active',
       shareQty: shareQty,
       sharePrice: Number(m.share_price) || 100000,
@@ -488,7 +643,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       createdAt: m.created_at || '2026-01-01',
       updatedAt: m.updated_at || new Date().toISOString(),
       gender: gender,
-      dob: m.birth_date || m.dob || '1990-01-01',
+      dob: dob,
       nid: m.nid || '',
       birthRegNo: m.birth_reg_no || '',
       photoUrl: m.photo_url || m.photoUrl,
@@ -2166,26 +2321,58 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     try {
-      const memberPayload = fresh96.map(m => ({
-        id: m.id,
-        member_no: m.memberNo,
-        name_bn: m.nameBn,
-        name_en: m.nameEn || '',
-        father_name: m.fatherName || '',
-        mother_name: m.motherName || '',
-        mobile: m.mobile || '',
-        alt_mobile: m.altMobile || '',
-        occupation: m.occupation || '',
-        present_address: m.presentAddress || '',
-        permanent_address: m.permanentAddress || '',
-        join_date: m.joinDate || '2026-01-01',
-        status: m.status || 'active',
-        share_qty: m.shareQty || 1,
-        opening_balance: m.openingBalance || 0,
-        current_due: m.currentDue !== undefined ? m.currentDue : ((m.shareQty || 1) * 25000),
-        created_at: m.createdAt || new Date().toISOString(),
-        updated_at: m.updatedAt || new Date().toISOString()
-      }));
+      const memberPayload = fresh96.map(m => {
+        const rowPayload: any = {
+          id: m.id,
+          member_no: m.memberNo,
+          name_bn: m.nameBn,
+          name_en: m.nameEn || '',
+          father_name: m.fatherName || '',
+          mother_name: m.motherName || '',
+          gender: m.gender || 'male',
+          birth_date: m.dob || '1990-01-01',
+          dob: m.dob || '1990-01-01',
+          nid: m.nid || '',
+          religion: m.religion || 'ইসলাম',
+          nationality: m.nationality || 'বাংলাদেশী',
+          mobile: m.mobile || '',
+          alt_mobile: m.altMobile || '',
+          occupation: m.occupation || '',
+          present_address: m.presentAddress || '',
+          permanent_address: m.permanentAddress || '',
+          join_date: m.joinDate || '2026-01-01',
+          status: m.status || 'active',
+          share_qty: m.shareQty || 1,
+          opening_balance: m.openingBalance || 0,
+          current_due: m.currentDue !== undefined ? m.currentDue : ((m.shareQty || 1) * 25000),
+          created_at: m.createdAt || new Date().toISOString(),
+          updated_at: m.updatedAt || new Date().toISOString()
+        };
+
+        // Support flat nominee columns if they exist in the members table
+        if (m.nominees && m.nominees.length > 0) {
+          const firstNominee = m.nominees[0];
+          rowPayload.nominee_name = firstNominee.name || '';
+          rowPayload.nominee_relation = firstNominee.relation || '';
+          rowPayload.nominee_nid = firstNominee.nidBirthReg || '';
+          rowPayload.nominee_nid_birth_reg = firstNominee.nidBirthReg || '';
+          rowPayload.nominee_mobile = firstNominee.mobile || '';
+          rowPayload.nominee_phone = firstNominee.mobile || '';
+          rowPayload.nominee_contact = firstNominee.mobile || '';
+          rowPayload.nominee_share_percent = Number(firstNominee.percentage) || 100;
+          rowPayload.nominee_percentage = Number(firstNominee.percentage) || 100;
+        }
+
+        // DYNAMIC COLUMN FILTERING
+        if (membersColumnsRef.current.length > 0) {
+          Object.keys(rowPayload).forEach(key => {
+            if (!membersColumnsRef.current.includes(key)) {
+              delete rowPayload[key];
+            }
+          });
+        }
+        return rowPayload;
+      });
 
       const { error: mErr } = await supabase.from('members').upsert(memberPayload);
       if (mErr) {

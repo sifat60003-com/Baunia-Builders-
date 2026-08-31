@@ -22,7 +22,8 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
-  AlertTriangle
+  AlertTriangle,
+  MapPin
 } from 'lucide-react';
 import { LoginView } from '../auth/LoginView';
 import { getMemberMonthlyStatusList, getCurrentRunningMonthId } from '../../utils/monthlySchedule';
@@ -31,8 +32,9 @@ type PortalView = 'home' | 'member_search' | 'login';
 type VerifStep = 'nid_verify' | 'pin_set' | 'pin_login' | 'otp_verify';
 
 export const PublicPortal: React.FC = () => {
-  const { members, settings, receipts, updateMember, showToast } = useApp();
+  const { members, settings, receipts, updateMember, showToast, addNotification } = useApp();
   const [currentView, setCurrentView] = useState<PortalView>('home');
+  const [hasAutoNotified, setHasAutoNotified] = useState(false);
   
   const [searchPhone, setSearchPhone] = useState('');
   const [searchedMember, setSearchedMember] = useState<any | null>(null);
@@ -50,6 +52,32 @@ export const PublicPortal: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const [verifError, setVerifError] = useState('');
+
+  // Auto-notification on member login with dues between 1st and 15th
+  React.useEffect(() => {
+    if (isVerified && searchedMember && !hasAutoNotified) {
+      const statusList = getMemberMonthlyStatusList(searchedMember.id, receipts, searchedMember.shareQty || 1, searchedMember.memberNo);
+      const runningMonthId = getCurrentRunningMonthId();
+      const runningMonthStatus = statusList.find(s => s.schedule.id === runningMonthId);
+      const isRunningMonthDue = runningMonthStatus && runningMonthStatus.status !== 'paid';
+      const today = new Date();
+      const currentDay = today.getDate();
+      
+      if (isRunningMonthDue && currentDay >= 1 && currentDay <= 15) {
+        setHasAutoNotified(true);
+        addNotification({
+          titleBn: 'চলতি মাসের বকেয়া পরিশোধ নোটিফিকেশন (অটোমেটিক)',
+          titleEn: 'Running Month Dues Alert (Auto)',
+          messageBn: `সদস্য ${searchedMember.nameBn} (${searchedMember.id}) পোর্টালে লগইন করেছেন। ১-১৫ তারিখের নিয়ম অনুযায়ী উনার চলতি মাসের বকেয়া পরিশোধের নোটিফিকেশন পরিষদ প্যানেলে পাঠানো হয়েছে।`,
+          messageEn: `Member ${searchedMember.nameEn || searchedMember.nameBn} (${searchedMember.id}) logged in. Auto-notified council of running month dues between 1st-15th.`,
+          type: 'member',
+          isRead: false,
+          linkTab: 'dues',
+        });
+        showToast('বকেয়া পরিশোধের নোটিফিকেশন পরিষদের জন্য পাঠানো হয়েছে!', 'info');
+      }
+    }
+  }, [isVerified, searchedMember, receipts, hasAutoNotified, addNotification, showToast]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -712,19 +740,53 @@ export const PublicPortal: React.FC = () => {
                            const isRunningMonthDue = runningMonthStatus && runningMonthStatus.status !== 'paid';
                            const today = new Date();
                            const currentDay = today.getDate();
-                           const showDuesReminder = isRunningMonthDue && currentDay >= 1 && currentDay <= 15;
+                           
+                           if (!isRunningMonthDue) return null;
+
+                           const isBetween1And15 = currentDay >= 1 && currentDay <= 15;
+
+                           const handleManualNotify = () => {
+                             addNotification({
+                               titleBn: 'বকেয়া পরিশোধের তাগিদ বার্তা (সদস্য কর্তৃক প্রেরিত)',
+                               titleEn: 'Member Manual Dues Alert',
+                               messageBn: `সদস্য ${searchedMember.nameBn} (${searchedMember.id}) চলতি মাসের বকেয়া পরিশোধের ব্যাপারে পরিষদকে সশরীরে মেসেজ পাঠিয়েছেন।`,
+                               messageEn: `Member ${searchedMember.nameEn || searchedMember.nameBn} (${searchedMember.id}) manually notified the council about dues.`,
+                               type: 'member',
+                               isRead: false,
+                               linkTab: 'dues',
+                             });
+                             showToast('পরিষদের জন্য তাগিদ মেসেজ সফলভাবে পাঠানো হয়েছে!', 'success');
+                           };
+
                            return (
-                             <>
-                               {showDuesReminder && (
-                                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
-                                   <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
-                                   <div>
-                                     <h4 className="font-bold text-amber-900">আপনার বকেয়া পরিশোধ করুন!</h4>
-                                     <p className="text-sm text-amber-800">চলতি মাসের কিস্তি এখনো পরিশোধিত হয়নি। অনুগ্রহ করে ১-১৫ তারিখের মধ্যে পরিশোধ করুন।</p>
-                                   </div>
+                             <div className="p-5 bg-rose-50 border-2 border-rose-200 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                               <div className="flex items-start gap-3.5">
+                                 <div className="p-3 bg-rose-100 text-rose-600 rounded-2xl shrink-0">
+                                   <AlertTriangle className="w-6 h-6 text-rose-600 shrink-0" />
                                  </div>
+                                 <div className="space-y-1">
+                                   <h4 className="font-extrabold text-rose-950 text-base sm:text-lg">চলতি মাসে আপনার চাঁদা বকেয়া রয়েছে!</h4>
+                                   <p className="text-xs sm:text-sm text-rose-800 font-medium">
+                                     চলতি মাসের কিস্তি এখনো পরিশোধ করা হয়নি। অনুগ্রহ করে দ্রুত আপনার কিস্তির টাকা পরিশোধ করুন।
+                                   </p>
+                                   {isBetween1And15 && (
+                                     <p className="text-xs text-amber-800 font-bold bg-amber-100/60 px-2.5 py-1 rounded-lg border border-amber-200/50 inline-block mt-1">
+                                       ⏳ ১ থেকে ১৫ তারিখের সময়সীমা কার্যকর রয়েছে। পরিষদ প্যানেলে নোটিফিকেশন পাঠানো হয়েছে।
+                                     </p>
+                                   )}
+                                 </div>
+                               </div>
+                               
+                               {isBetween1And15 && (
+                                 <button
+                                   onClick={handleManualNotify}
+                                   className="w-full md:w-auto bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm transition-all shadow-md shadow-rose-600/20 shrink-0 cursor-pointer flex items-center justify-center gap-1.5"
+                                 >
+                                   <Send className="w-4 h-4" />
+                                   <span>পরিষদকে মেসেজ পাঠান</span>
+                                 </button>
                                )}
-                             </>
+                             </div>
                            );
                         })()}
                         
@@ -848,8 +910,90 @@ export const PublicPortal: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Detailed Profile Information */}
+                        <div className="pt-4 border-t border-slate-200 space-y-4">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-slate-500" />
+                            <h4 className="font-bold text-slate-900 text-sm sm:text-base">ব্যক্তিগত ও পরিচিতি তথ্য</h4>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+                            {/* Father's Name */}
+                            <div className="bg-slate-50/60 p-3 rounded-xl border border-slate-200/60">
+                              <p className="text-[10px] font-bold text-slate-400">পিতার নাম</p>
+                              <p className="text-xs sm:text-sm font-bold text-slate-700 mt-0.5">
+                                {searchedMember.fatherName || '—'}
+                              </p>
+                            </div>
+
+                            {/* Mother's Name */}
+                            <div className="bg-slate-50/60 p-3 rounded-xl border border-slate-200/60">
+                              <p className="text-[10px] font-bold text-slate-400">মাতার নাম</p>
+                              <p className="text-xs sm:text-sm font-bold text-slate-700 mt-0.5">
+                                {searchedMember.motherName || '—'}
+                              </p>
+                            </div>
+
+                            {/* Date of Birth */}
+                            <div className="bg-slate-50/60 p-3 rounded-xl border border-slate-200/60">
+                              <p className="text-[10px] font-bold text-slate-400">জন্ম তারিখ</p>
+                              <p className="text-xs sm:text-sm font-bold text-slate-700 mt-0.5 font-mono">
+                                {searchedMember.dob || '—'}
+                              </p>
+                            </div>
+
+                            {/* Religion */}
+                            <div className="bg-slate-50/60 p-3 rounded-xl border border-slate-200/60">
+                              <p className="text-[10px] font-bold text-slate-400">ধর্ম</p>
+                              <p className="text-xs sm:text-sm font-bold text-slate-700 mt-0.5">
+                                {searchedMember.religion || 'ইসলাম'}
+                              </p>
+                            </div>
+
+                            {/* Nationality */}
+                            <div className="bg-slate-50/60 p-3 rounded-xl border border-slate-200/60">
+                              <p className="text-[10px] font-bold text-slate-400">জাতীয়তা</p>
+                              <p className="text-xs sm:text-sm font-bold text-slate-700 mt-0.5">
+                                {searchedMember.nationality || 'বাংলাদেশী'}
+                              </p>
+                            </div>
+
+                            {/* Gender */}
+                            <div className="bg-slate-50/60 p-3 rounded-xl border border-slate-200/60">
+                              <p className="text-[10px] font-bold text-slate-400">লিঙ্গ (Gender)</p>
+                              <p className="text-xs sm:text-sm font-bold text-slate-700 mt-0.5">
+                                {searchedMember.gender === 'female' ? 'মহিলা' : 'পুরুষ'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                            {/* Present Address */}
+                            <div className="bg-slate-50/60 p-3.5 rounded-xl border border-slate-200/60 flex gap-3">
+                              <MapPin className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400">বর্তমান ঠিকানা</p>
+                                <p className="text-xs sm:text-sm font-bold text-slate-700 mt-0.5 leading-relaxed">
+                                  {searchedMember.presentAddress || 'উল্লেখ নেই'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Permanent Address */}
+                            <div className="bg-slate-50/60 p-3.5 rounded-xl border border-slate-200/60 flex gap-3">
+                              <MapPin className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400">স্থায়ী ঠিকানা</p>
+                                <p className="text-xs sm:text-sm font-bold text-slate-700 mt-0.5 leading-relaxed">
+                                  {searchedMember.permanentAddress || 'উল্লেখ নেই'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
                         {/* Nominee Details Section */}
-                        <div className="pt-2 border-t border-slate-200">
+                        <div className="pt-4 border-t border-slate-200">
                           <div className="flex items-center gap-2 mb-3">
                             <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
                             <h4 className="font-bold text-slate-900 text-sm sm:text-base">মনোনীত ব্যক্তি / নমিনি তথ্য</h4>
