@@ -211,24 +211,29 @@ const safeSaveToLocalStorage = (key: string, data: any) => {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (err: any) {
     try {
-      // Quota exceeded fallback: sanitize payload by trimming audit logs, notifications, and heavy base64 strings
+      // Quota exceeded fallback: sanitize payload by trimming audit logs, notifications, and keeping photos
       const sanitizedData = {
         ...data,
         auditLogs: (data.auditLogs || []).slice(0, 30),
         notifications: (data.notifications || []).slice(0, 20),
         members: (data.members || []).map((m: any) => {
           let photoUrl = m.photoUrl;
-          if (typeof photoUrl === 'string' && photoUrl.startsWith('data:') && photoUrl.length > 80000) {
+          if (typeof photoUrl === 'string' && photoUrl.startsWith('data:') && photoUrl.length > 150000) {
             photoUrl = undefined;
           }
           let photoBackUrl = m.photoBackUrl;
-          if (typeof photoBackUrl === 'string' && photoBackUrl.startsWith('data:') && photoBackUrl.length > 80000) {
+          if (typeof photoBackUrl === 'string' && photoBackUrl.startsWith('data:') && photoBackUrl.length > 150000) {
             photoBackUrl = undefined;
           }
+          const updatedNominees = Array.isArray(m.nominees) ? m.nominees.map((n: any) => ({
+            ...n,
+            photoUrl: typeof n.photoUrl === 'string' && n.photoUrl.startsWith('data:') && n.photoUrl.length > 150000 ? undefined : n.photoUrl
+          })) : m.nominees;
           return {
             ...m,
             photoUrl,
             photoBackUrl,
+            nominees: updatedNominees
           };
         }),
       };
@@ -254,8 +259,16 @@ const safeSaveToLocalStorage = (key: string, data: any) => {
             joinDate: m.joinDate,
             fatherName: m.fatherName,
             motherName: m.motherName,
+            spouseName: m.spouseName,
+            dob: m.dob,
+            gender: m.gender,
+            occupation: m.occupation,
             presentAddress: m.presentAddress,
             permanentAddress: m.permanentAddress,
+            photoUrl: m.photoUrl,
+            photoBackUrl: m.photoBackUrl,
+            pin: m.pin,
+            isPinSet: m.isPinSet,
             nominees: m.nominees
           })),
           shares: data.shares,

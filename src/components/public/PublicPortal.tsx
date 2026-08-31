@@ -23,10 +23,13 @@ import {
   Eye,
   EyeOff,
   AlertTriangle,
-  MapPin
+  MapPin,
+  Camera,
+  Upload
 } from 'lucide-react';
 import { LoginView } from '../auth/LoginView';
 import { getMemberMonthlyStatusList, getCurrentRunningMonthId } from '../../utils/monthlySchedule';
+import { compressImage } from '../../utils/imageCompressor';
 
 type PortalView = 'home' | 'member_search' | 'login';
 type VerifStep = 'nid_verify' | 'pin_set' | 'pin_login' | 'otp_verify';
@@ -807,24 +810,59 @@ export const PublicPortal: React.FC = () => {
 
                         {/* Member Profile Header */}
                         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-blue-950 text-white shadow-md">
-                          {searchedMember.photoUrl ? (
-                            <img
-                              src={searchedMember.photoUrl}
-                              alt={searchedMember.nameBn}
-                              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-4 ring-white/20 shadow-lg shrink-0 bg-slate-800"
-                            />
-                          ) : (
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 ring-4 ring-white/20 shadow-lg">
-                              <User className="w-10 h-10 sm:w-12 sm:h-12" />
-                            </div>
-                          )}
+                          <div className="relative shrink-0 group">
+                            {searchedMember.photoUrl ? (
+                              <img
+                                src={searchedMember.photoUrl}
+                                alt={searchedMember.nameBn}
+                                className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-4 ring-white/20 shadow-lg shrink-0 bg-slate-800"
+                              />
+                            ) : (
+                              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-blue-600 text-white flex flex-col items-center justify-center shrink-0 ring-4 ring-white/20 shadow-lg">
+                                <User className="w-10 h-10 sm:w-12 sm:h-12 text-blue-100" />
+                                <span className="text-[10px] font-bold text-blue-200 mt-0.5">ছবি নেই</span>
+                              </div>
+                            )}
+
+                            {/* Member Direct Photo Upload Button Overlay */}
+                            <label 
+                              className="absolute inset-0 bg-slate-950/75 backdrop-blur-xs rounded-2xl opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-1 text-white font-bold text-[11px] cursor-pointer"
+                              title="আপনার প্রোফাইল ছবি আপলোড / পরিবর্তন করুন"
+                            >
+                              <Camera className="w-5 h-5 text-amber-300 animate-pulse" />
+                              <span>ছবি পরিবর্তন</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file && searchedMember) {
+                                    if (file.size > 10 * 1024 * 1024) {
+                                      showToast('ফাইলের সাইজ ১০MB এর বেশি হতে পারবে না!', 'error');
+                                      return;
+                                    }
+                                    try {
+                                      const compressed = await compressImage(file, 480, 480, 0.75);
+                                      updateMember(searchedMember.id, { photoUrl: compressed });
+                                      setSearchedMember((prev: any) => prev ? { ...prev, photoUrl: compressed } : prev);
+                                      showToast('আপনার ছবি সফলভাবে আপডেট ও সংরক্ষিত হয়েছে!', 'success');
+                                    } catch (err) {
+                                      console.error('Photo upload error:', err);
+                                      showToast('ছবি প্রসেস করতে সমস্যা হয়েছে', 'error');
+                                    }
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
 
                           <div className="flex-1 text-center sm:text-left space-y-1">
                             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                               <h3 className="font-black text-xl sm:text-2xl text-white tracking-tight">{searchedMember.nameBn}</h3>
                               <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
                                 <CheckCircle2 className="w-3 h-3" />
-                                সক্রিয় সদস্য
+                                সক্রিয় সদস্য
                               </span>
                             </div>
 
@@ -842,6 +880,35 @@ export const PublicPortal: React.FC = () => {
                                   যোগদান: {searchedMember.joinDate}
                                 </span>
                               )}
+                              
+                              {/* Direct Upload Tag */}
+                              <label className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/30 hover:bg-blue-500/50 text-blue-200 hover:text-white rounded-lg cursor-pointer border border-blue-400/30 transition text-[11px] font-bold">
+                                <Camera className="w-3 h-3 text-amber-300" />
+                                <span>ছবি আপলোড</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file && searchedMember) {
+                                      if (file.size > 10 * 1024 * 1024) {
+                                        showToast('ফাইলের সাইজ ১০MB এর বেশি হতে পারবে না!', 'error');
+                                        return;
+                                      }
+                                      try {
+                                        const compressed = await compressImage(file, 480, 480, 0.75);
+                                        updateMember(searchedMember.id, { photoUrl: compressed });
+                                        setSearchedMember((prev: any) => prev ? { ...prev, photoUrl: compressed } : prev);
+                                        showToast('আপনার ছবি সফলভাবে আপডেট হয়েছে!', 'success');
+                                      } catch (err) {
+                                        console.error('Photo upload error:', err);
+                                        showToast('ছবি প্রসেস করতে সমস্যা হয়েছে', 'error');
+                                      }
+                                    }
+                                  }}
+                                />
+                              </label>
                             </div>
                           </div>
                         </div>
@@ -1003,17 +1070,59 @@ export const PublicPortal: React.FC = () => {
                             <div className="grid grid-cols-1 gap-3">
                               {searchedMember.nominees.map((nominee: any, idx: number) => (
                                 <div key={idx} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                  {nominee.photoUrl ? (
-                                    <img 
-                                      src={nominee.photoUrl} 
-                                      alt={nominee.name} 
-                                      className="w-14 h-14 rounded-xl object-cover ring-2 ring-slate-300 shrink-0 bg-white"
-                                    />
-                                  ) : (
-                                    <div className="w-14 h-14 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
-                                      <User className="w-7 h-7" />
-                                    </div>
-                                  )}
+                                  <div className="relative shrink-0 group/nom">
+                                    {nominee.photoUrl ? (
+                                      <img 
+                                        src={nominee.photoUrl} 
+                                        alt={nominee.name} 
+                                        className="w-16 h-16 rounded-xl object-cover ring-2 ring-slate-300 shrink-0 bg-white"
+                                      />
+                                    ) : (
+                                      <div className="w-16 h-16 rounded-xl bg-blue-50 text-blue-700 flex flex-col items-center justify-center shrink-0 border border-blue-200">
+                                        <User className="w-8 h-8 text-blue-600" />
+                                        <span className="text-[9px] font-bold text-blue-600">ছবি নেই</span>
+                                      </div>
+                                    )}
+
+                                    {/* Quick Nominee Photo Upload Button */}
+                                    <label 
+                                      className="absolute inset-0 bg-slate-950/75 backdrop-blur-xs rounded-xl opacity-0 group-hover/nom:opacity-100 transition-all flex flex-col items-center justify-center gap-0.5 text-white font-bold text-[10px] cursor-pointer"
+                                      title="নমিনির ছবি আপলোড / পরিবর্তন করুন"
+                                    >
+                                      <Camera className="w-4 h-4 text-amber-300 animate-pulse" />
+                                      <span>ছবি দিন</span>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={async (e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file && searchedMember) {
+                                            if (file.size > 10 * 1024 * 1024) {
+                                              showToast('ফাইলের সাইজ ১০MB এর বেশি হতে পারবে না!', 'error');
+                                              return;
+                                            }
+                                            try {
+                                              const compressed = await compressImage(file, 480, 480, 0.75);
+                                              let updated = [...(searchedMember.nominees || [])];
+                                              if (updated[idx]) {
+                                                updated[idx] = { ...updated[idx], photoUrl: compressed };
+                                                updateMember(searchedMember.id, { 
+                                                  nominees: updated,
+                                                  nominee_photo: idx === 0 ? compressed : (searchedMember as any).nominee_photo 
+                                                });
+                                                setSearchedMember((prev: any) => prev ? { ...prev, nominees: updated } : prev);
+                                                showToast('নমিনির ছবি সফলভাবে সংরক্ষিত হয়েছে!', 'success');
+                                              }
+                                            } catch (err) {
+                                              console.error('Nominee photo upload error:', err);
+                                              showToast('ছবি প্রসেস করতে সমস্যা হয়েছে', 'error');
+                                            }
+                                          }
+                                        }}
+                                      />
+                                    </label>
+                                  </div>
 
                                   <div className="flex-1 space-y-1 w-full">
                                     <div className="flex flex-wrap items-center justify-between gap-2">

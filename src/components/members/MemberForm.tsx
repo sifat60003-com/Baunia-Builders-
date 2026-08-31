@@ -325,7 +325,7 @@ export const MemberForm: React.FC = () => {
       permanentAddress: permanentAddress.trim(),
       religion: religion.trim() || 'ইসলাম',
       nationality: nationality.trim() || 'বাংলাদেশী',
-      photoUrl: photoUrl.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+      photoUrl: photoUrl.trim() || undefined,
       photoBackUrl: photoBackUrl.trim() || undefined,
       joinDate,
       status,

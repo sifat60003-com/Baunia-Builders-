@@ -220,22 +220,29 @@ export const MemberProfile: React.FC = () => {
           
           {/* Member Photo */}
           <div className="relative shrink-0 group">
-            <img
-              src={member.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
-              alt={member.nameBn}
-              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover ring-4 ring-white/20 shadow-lg"
-            />
+            {member.photoUrl ? (
+              <img
+                src={member.photoUrl}
+                alt={member.nameBn}
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover ring-4 ring-white/20 shadow-lg bg-slate-800"
+              />
+            ) : (
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-blue-700/60 border border-white/20 text-blue-100 flex flex-col items-center justify-center ring-4 ring-white/20 shadow-lg">
+                <User className="w-12 h-12 text-blue-200" />
+                <span className="text-[10px] font-bold mt-1 text-blue-200">ছবি নেই</span>
+              </div>
+            )}
             
             {/* Direct Photo Change Overlay for Super Admin / Admin */}
             {currentUser.role !== 'collector' && (
               <button
                 type="button"
                 onClick={() => photoInputRef.current?.click()}
-                className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs rounded-2xl opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-1 text-white font-bold text-[11px] cursor-pointer"
+                className="absolute inset-0 bg-slate-950/75 backdrop-blur-xs rounded-2xl opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-1 text-white font-bold text-[11px] cursor-pointer"
                 title="সদস্যের ছবি আপলোড / পরিবর্তন করুন"
               >
                 <Camera className="w-6 h-6 text-amber-300 animate-pulse" />
-                <span>ছবি আপলোড</span>
+                <span>ছবি পরিবর্তন</span>
               </button>
             )}
 
@@ -888,17 +895,54 @@ export const MemberProfile: React.FC = () => {
                     <div>
                       <div className="flex items-start justify-between pb-2 border-b border-slate-100 gap-2">
                         <div className="flex items-center gap-3">
-                          {nominee.photoUrl ? (
-                            <img
-                              src={nominee.photoUrl}
-                              alt={nominee.name}
-                              className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
-                            />
-                          ) : (
-                            <div className="p-2.5 rounded-full bg-blue-50 text-blue-700 shrink-0">
-                              <User className="w-5 h-5" />
+                          <label 
+                            className="relative group/nom cursor-pointer shrink-0"
+                            title="নমিনির ছবি আপলোড / পরিবর্তন করতে ক্লিক করুন"
+                          >
+                            {nominee.photoUrl ? (
+                              <img
+                                src={nominee.photoUrl}
+                                alt={nominee.name}
+                                className="w-12 h-12 rounded-full object-cover border border-slate-200 shadow-xs"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200">
+                                <User className="w-6 h-6" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-slate-950/70 rounded-full opacity-0 group-hover/nom:opacity-100 transition-all flex items-center justify-center text-white">
+                              <Camera className="w-4 h-4 text-amber-300" />
                             </div>
-                          )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file && member) {
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    showToast('ফাইলের সাইজ ১০MB এর বেশি হতে পারবে না!', 'error');
+                                    return;
+                                  }
+                                  try {
+                                    const compressed = await compressImage(file, 480, 480, 0.75);
+                                    let updated = [...(member.nominees || [])];
+                                    if (updated[idx]) {
+                                      updated[idx] = { ...updated[idx], photoUrl: compressed };
+                                      updateMember(member.id, { 
+                                        nominees: updated,
+                                        nominee_photo: idx === 0 ? compressed : (member as any).nominee_photo 
+                                      });
+                                      showToast('নমিনির ছবি সফলভাবে আপডেট হয়েছে!', 'success');
+                                    }
+                                  } catch (err) {
+                                    console.error('Failed to compress nominee photo:', err);
+                                    showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+                                  }
+                                }
+                              }}
+                            />
+                          </label>
                           <div>
                             <h4 className="font-extrabold text-slate-900 text-sm">{nominee.name}</h4>
                             <span className="text-xs text-blue-600 font-bold">{nominee.relation}</span>
