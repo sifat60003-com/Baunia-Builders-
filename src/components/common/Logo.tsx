@@ -4,7 +4,7 @@ import defaultLogo from '../../assets/images/baunia_builders_logo_1787932825880.
 
 interface LogoProps {
   className?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
   showText?: boolean;
   isLight?: boolean;
 }
@@ -48,6 +48,7 @@ export const Logo: React.FC<LogoProps> = ({
     md: { icon: 46, text: 'text-base', sub: 'text-xs' },
     lg: { icon: 60, text: 'text-xl', sub: 'text-xs' },
     xl: { icon: 80, text: 'text-2xl', sub: 'text-sm' },
+    xxl: { icon: 110, text: 'text-3xl', sub: 'text-base' },
   };
 
   const currentSize = sizeMap[size];
