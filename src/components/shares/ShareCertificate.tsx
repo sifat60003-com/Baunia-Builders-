@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { formatCurrency, formatDate, toBnDigits } from '../../utils/formatters';
+import defaultLogo from '../../assets/images/baunia_builders_logo_1787932825880.jpg';
 
 export const ShareCertificate: React.FC = () => {
   const { 
@@ -56,14 +57,18 @@ export const ShareCertificate: React.FC = () => {
     percentage: 100
   };
 
+  const watermarkSrc = (settings?.logoUrl && !settings.logoUrl.includes('1787927051112')) 
+    ? settings.logoUrl 
+    : defaultLogo;
+
   return (
     <div className="space-y-6 pb-12">
-      {/* Dynamic Style block for Landscape A4 printing */}
+      {/* Dynamic Style block for Portrait A4 printing */}
       <style>{`
         @media print {
           html, body {
-            width: 297mm !important;
-            height: 210mm !important;
+            width: 210mm !important;
+            height: 297mm !important;
             margin: 0 !important;
             padding: 0 !important;
             overflow: hidden !important;
@@ -77,16 +82,14 @@ export const ShareCertificate: React.FC = () => {
           }
           .print-card {
             position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 297mm !important;
-            height: 210mm !important;
+            top: 4mm !important;
+            left: 4mm !important;
+            width: 202mm !important;
+            height: 289mm !important;
             margin: 0 !important;
-            padding: 0.25in !important;
+            padding: 0.3in !important;
             box-sizing: border-box !important;
-            border-width: 6px !important;
-            border-color: #1e3a8a !important;
-            border-style: double !important;
+            border: 8px double #1e3a8a !important;
             border-radius: 0 !important;
             box-shadow: none !important;
             page-break-inside: avoid !important;
@@ -96,7 +99,7 @@ export const ShareCertificate: React.FC = () => {
           }
           /* Compact spacing and fonts inside printing */
           .print-card .inner-frame {
-            padding: 0.12in !important;
+            padding: 0.15in !important;
             margin: 0 !important;
             height: 100% !important;
             box-sizing: border-box !important;
@@ -105,7 +108,7 @@ export const ShareCertificate: React.FC = () => {
             justify-content: space-between !important;
           }
           .print-card .inner-frame > * + * {
-            margin-top: 6px !important;
+            margin-top: 8px !important;
           }
           .print-card h1 {
             font-size: 26px !important;
@@ -113,8 +116,8 @@ export const ShareCertificate: React.FC = () => {
           }
           /* Shrink photo heights and container padding in printing */
           .print-card .photo-container {
-            width: 80px !important;
-            height: 100px !important;
+            width: 70px !important;
+            height: 90px !important;
           }
           .print-card .photo-label {
             margin-top: 4px !important;
@@ -139,7 +142,7 @@ export const ShareCertificate: React.FC = () => {
             margin-top: 2px !important;
           }
           @page {
-            size: A4 landscape;
+            size: A4 portrait;
             margin: 0 !important;
           }
         }
@@ -191,8 +194,8 @@ export const ShareCertificate: React.FC = () => {
         </div>
       </div>
 
-      {/* Printable Landscape A4 Certificate Canvas */}
-      <div className="max-w-5xl mx-auto bg-white rounded-3xl p-8 sm:p-10 shadow-2xl border-8 border-double border-blue-900 relative overflow-hidden print-card">
+      {/* Printable Portrait A4 Certificate Canvas */}
+      <div className="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-10 shadow-2xl border-8 border-double border-blue-900 relative overflow-hidden print-card">
         
         {/* Decorative Corner Ornaments */}
         <div className="absolute top-4 left-4 w-12 h-12 border-t-4 border-l-4 border-amber-600/30"></div>
@@ -200,57 +203,62 @@ export const ShareCertificate: React.FC = () => {
         <div className="absolute bottom-4 left-4 w-12 h-12 border-b-4 border-l-4 border-amber-600/30"></div>
         <div className="absolute bottom-4 right-4 w-12 h-12 border-b-4 border-r-4 border-amber-600/30"></div>
 
-        {/* Ornate Background Watermark */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-          <div className="w-96 h-96 rounded-full border-16 border-blue-900 flex items-center justify-center">
-            <Award className="w-64 h-64 text-blue-950" />
-          </div>
+        {/* Ornate Background Watermark (Baunia Builders Logo) */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-[0.11] pointer-events-none select-none z-0">
+          <img 
+            src={watermarkSrc} 
+            alt="Baunia Builders Watermark" 
+            className="w-72 h-72 sm:w-96 sm:h-96 object-contain grayscale"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/logo.png';
+            }}
+          />
         </div>
 
         {/* Certificate Inner Frame */}
-        <div className="border border-amber-600/40 p-6 sm:p-8 rounded-2xl relative z-10 space-y-6 inner-frame">
+        <div className="border border-amber-600/40 p-4 sm:p-6 rounded-2xl relative z-10 space-y-5 inner-frame">
           
-          {/* Certificate Header Block */}
-          <div className="grid grid-cols-12 gap-4 pb-4 border-b-2 border-blue-950 items-center">
+          {/* Certificate Header Block - Left-aligned Logo, Centered Corporate Text */}
+          <div className="grid grid-cols-12 gap-2 pb-4 border-b-2 border-blue-950 items-center">
             {/* Logo left */}
-            <div className="col-span-2 flex justify-start">
+            <div className="col-span-3 sm:col-span-2 flex justify-start">
               <Logo size="lg" showText={false} />
             </div>
 
             {/* Central Corporate Banner */}
-            <div className="col-span-8 text-center space-y-1">
-              <h1 className="text-3xl sm:text-4xl font-black text-blue-950 tracking-tight">
+            <div className="col-span-6 sm:col-span-8 text-center space-y-1">
+              <h1 className="text-2xl sm:text-4xl font-black text-blue-950 tracking-tight">
                 বাউনিয়া বিল্ডার্স
               </h1>
-              <div className="text-xs sm:text-sm font-bold text-blue-800 uppercase tracking-widest">
+              <div className="text-[10px] sm:text-sm font-bold text-blue-800 uppercase tracking-widest leading-none">
                 BAUNIA BUILDERS | DHAKA, BANGLADESH
               </div>
-              <p className="text-[10px] text-slate-600 font-bold">
+              <p className="text-[8px] sm:text-xs text-slate-600 font-bold leading-tight">
                 বাউনিয়া পুকুরপাড়, তুরাগ, ঢাকা-১২৩০ | মোবাইল: 01833-405170, 01711-280514
               </p>
             </div>
 
-            {/* Empty space or right metadata aligned */}
-            <div className="col-span-2 text-right">
-            </div>
+            {/* Balancer spacer */}
+            <div className="col-span-3 sm:col-span-2"></div>
           </div>
 
           {/* Certificate Title Banner */}
-          <div className="text-center py-1">
-            <div className="inline-block px-10 py-2 bg-gradient-to-r from-blue-950 via-blue-900 to-blue-950 text-amber-300 font-black text-base sm:text-lg rounded-xl shadow-md uppercase tracking-wider border border-amber-400/40">
+          <div className="text-center py-0.5">
+            <div className="inline-block px-8 py-2 bg-gradient-to-r from-blue-950 via-blue-900 to-blue-950 text-amber-300 font-black text-sm sm:text-base rounded-xl shadow-md uppercase tracking-wider border border-amber-400/40">
               শেয়ার মালিকানা সনদপত্র | SHARE CERTIFICATE
             </div>
           </div>
 
           {/* Meta Bar: Cert No & Issue Date */}
-          <div className="grid grid-cols-3 text-xs font-bold text-slate-700 px-4 py-2.5 bg-slate-50/80 rounded-xl border border-slate-200">
+          <div className="grid grid-cols-3 gap-2 text-[10px] sm:text-xs font-bold text-slate-700 px-4 py-2 bg-slate-50/80 rounded-xl border border-slate-200">
             <div>
               <span className="text-slate-500">সনদ নং (Certificate No):</span>{' '}
-              <span className="font-mono text-blue-900 text-sm block sm:inline">{certNumber}</span>
+              <span className="font-mono text-blue-900 block sm:inline">{certNumber}</span>
             </div>
             <div className="text-center">
               <span className="text-slate-500">সদস্য আইডি:</span>{' '}
-              <span className="font-mono text-blue-900 text-sm block sm:inline">{member.id}</span>
+              <span className="font-mono text-blue-900 block sm:inline">{member.id}</span>
             </div>
             <div className="text-right">
               <span className="text-slate-500">ইস্যু তারিখ (Issue Date):</span>{' '}
@@ -258,18 +266,18 @@ export const ShareCertificate: React.FC = () => {
             </div>
           </div>
 
-          {/* Layout Content Grid: Left (Member info), Right (Photos & Nominee Details) */}
-          <div className="grid grid-cols-12 gap-6 items-start pt-2 print:grid-cols-12 print:gap-4">
+          {/* Layout Content Grid: Left (Written details), Right (Combined photos & Nominee info) */}
+          <div className="grid grid-cols-12 gap-5 items-start pt-1.5 print:gap-4">
             
-            {/* Left Hand: Core Certification Text */}
-            <div className="col-span-12 lg:col-span-7 print:col-span-7 space-y-4 text-justify print:space-y-2">
-              <div className="text-slate-800 leading-relaxed text-sm font-semibold space-y-3">
+            {/* Left Column: Certification Text */}
+            <div className="col-span-12 sm:col-span-7 print:col-span-7 space-y-3">
+              <div className="text-slate-800 leading-relaxed text-xs sm:text-sm font-semibold text-justify space-y-3.5 px-1">
                 <p>
                   এই মর্মে প্রত্যয়ন করা যাইতেছে যে, সম্মানিত সদস্য জনাব/জনাবা{' '}
-                  <strong className="text-blue-950 font-black text-base underline underline-offset-4 decoration-amber-500">
+                  <strong className="text-blue-950 font-black text-sm sm:text-base underline underline-offset-4 decoration-amber-500">
                     {member.nameBn}
                   </strong>
-                  {member.nameEn && <span> ({member.nameEn})</span>}, পিতা:{' '}
+                  {member.nameEn && <span className="font-bold text-xs"> ({member.nameEn})</span>}, পিতা:{' '}
                   <strong>{member.fatherName}</strong>, মাতা: <strong>{member.motherName}</strong>, জাতীয় পরিচয়পত্র/জন্মনিবন্ধন নং:{' '}
                   <span className="font-mono font-bold text-slate-900">{member.nid}</span>, স্থায়ী ঠিকানা:{' '}
                   <span className="font-normal text-slate-700">{member.permanentAddress}</span>।
@@ -277,73 +285,75 @@ export const ShareCertificate: React.FC = () => {
 
                 <p>
                   তিনি বাউনিয়া বিল্ডার্স এর একজন আইনানুগ নিবন্ধিত ও নিয়মিত সক্রিয় সাধারণ সদস্য। তিনি অত্র প্রতিষ্ঠানের মোট{' '}
-                  <span className="inline-block px-2.5 py-0.5 bg-blue-100 text-blue-950 font-black rounded-lg border border-blue-300">
+                  <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-950 font-black rounded-lg border border-blue-300">
                     {language === 'bn' ? toBnDigits(member.shareQty || 0) : (member.shareQty || 0)} টি
                   </span>{' '}
                   সাধারণ শেয়ারের স্থায়ী মালিকানা অর্জন করিয়াছেন এবং তিনি অত্র প্রতিষ্ঠানের গঠনতন্ত্র ও সাধারণ নীতিমালা অনুযায়ী শেয়ার অংশীদার ও স্বত্বাধিকারী হিসেবে স্বীকৃতি লাভ করিয়াছেন।
                 </p>
               </div>
- 
- 
             </div>
 
-            {/* Right Hand: Photos and Nominee Details Box */}
-            <div className="col-span-12 lg:col-span-5 print:col-span-5 bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 space-y-4 right-panel-container">
+            {/* Right Column: Photos Box (Member & Nominee side by side in one box) and Nominee Details Box underneath */}
+            <div className="col-span-12 sm:col-span-5 print:col-span-5 space-y-3 right-panel-container">
               
-              {/* Photos Panel */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Member Photo */}
-                <div className="flex flex-col items-center">
-                  <div className="w-24 h-28 bg-white border-2 border-blue-900 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs shrink-0 photo-container">
-                    {member.member_photo ? (
-                      <img
-                        src={member.member_photo}
-                        alt={member.nameBn}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center p-2 text-slate-300">
-                        <User className="w-10 h-10 mx-auto opacity-40 text-blue-900" />
-                        <span className="text-[8px] font-bold block text-slate-400 mt-1">ফটো পাওয়া যায়নি</span>
-                      </div>
-                    )}
+              {/* Single Box containing both Member and Nominee Photos side-by-side */}
+              <div className="bg-slate-50/60 rounded-2xl p-3 border border-slate-200">
+                <div className="grid grid-cols-2 gap-3 items-center">
+                  {/* Member Photo */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-18 h-22 sm:w-20 sm:h-24 bg-white border-2 border-blue-900 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs shrink-0 photo-container">
+                      {member.photoUrl ? (
+                        <img
+                          src={member.photoUrl}
+                          alt={member.nameBn}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="text-center p-1 text-slate-300">
+                          <User className="w-8 h-8 mx-auto opacity-40 text-blue-900" />
+                          <span className="text-[7px] font-bold block text-slate-400 mt-0.5">ফটো পাওয়া যায়নি</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[8px] sm:text-[9px] font-bold text-blue-950 mt-1 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-200 photo-label">
+                      সদস্যের ছবি
+                    </span>
                   </div>
-                  <span className="text-[10px] font-bold text-blue-950 mt-1.5 uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 photo-label">
-                    সদস্যের ছবি
-                  </span>
-                </div>
 
-                {/* Nominee Photo */}
-                <div className="flex flex-col items-center">
-                  <div className="w-24 h-28 bg-white border-2 border-emerald-800 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs shrink-0 photo-container">
-                    {primaryNominee.photoUrl ? (
-                      <img
-                        src={primaryNominee.photoUrl}
-                        alt="Nominee"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center p-2 text-slate-300">
-                        <User className="w-10 h-10 mx-auto opacity-40 text-emerald-800" />
-                        <span className="text-[8px] font-bold block text-slate-400 mt-1">ফটো পাওয়া যায়নি</span>
-                      </div>
-                    )}
+                  {/* Nominee Photo */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-18 h-22 sm:w-20 sm:h-24 bg-white border-2 border-emerald-800 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs shrink-0 photo-container">
+                      {primaryNominee.photoUrl ? (
+                        <img
+                          src={primaryNominee.photoUrl}
+                          alt="Nominee"
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="text-center p-1 text-slate-300">
+                          <User className="w-8 h-8 mx-auto opacity-40 text-emerald-800" />
+                          <span className="text-[7px] font-bold block text-slate-400 mt-0.5">ফটো পাওয়া যায়নি</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[8px] sm:text-[9px] font-bold text-emerald-800 mt-1 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200 photo-label">
+                      নমিনির ছবি
+                    </span>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-800 mt-1.5 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 photo-label">
-                    নমিনির ছবি
-                  </span>
                 </div>
               </div>
 
-              {/* Nominee details listing */}
-              <div className="bg-white rounded-xl p-3 border border-slate-150 space-y-2 text-xs">
-                <div className="pb-1.5 border-b border-slate-100 flex items-center gap-1.5 text-blue-950">
-                  <Heart className="w-3.5 h-3.5 text-rose-500" />
-                  <span className="font-extrabold uppercase tracking-wide text-[10px]">মনোনীত ব্যক্তি (Nominee Details)</span>
+              {/* Nominee Details Card (Underneath the photo box) */}
+              <div className="bg-white rounded-xl p-3 border border-slate-150 text-[10px] sm:text-xs">
+                <div className="pb-1 border-b border-slate-100 flex items-center gap-1.5 text-blue-950 mb-1.5">
+                  <Heart className="w-3 h-3 text-rose-500" />
+                  <span className="font-extrabold uppercase tracking-wide text-[8px] sm:text-[9px]">মনোনীত ব্যক্তি (Nominee Details)</span>
                 </div>
 
                 {primaryNominee.name ? (
-                  <div className="space-y-1 text-[11px] font-bold text-slate-800 leading-relaxed">
+                  <div className="space-y-1 font-bold text-slate-800 leading-tight">
                     <div className="grid grid-cols-12 gap-1">
                       <span className="col-span-4 text-slate-400 font-medium">নাম:</span>
                       <span className="col-span-8 text-slate-900 font-extrabold">{primaryNominee.name}</span>
@@ -354,7 +364,9 @@ export const ShareCertificate: React.FC = () => {
                     </div>
                     {primaryNominee.nidBirthReg && (
                       <div className="grid grid-cols-12 gap-1">
-                        <span className="col-span-4 text-slate-400 font-medium">NID/জন্মনিবন্ধন:</span>
+                        <span className="col-span-4 text-slate-400 font-medium">
+                          {primaryNominee.nidBirthReg.trim().length === 17 ? 'জন্ম নিবন্ধন:' : 'এনআইডি:'}
+                        </span>
                         <span className="col-span-8 font-mono">{primaryNominee.nidBirthReg}</span>
                       </div>
                     )}
@@ -367,12 +379,12 @@ export const ShareCertificate: React.FC = () => {
                     {primaryNominee.address && (
                       <div className="grid grid-cols-12 gap-1">
                         <span className="col-span-4 text-slate-400 font-medium">ঠিকানা:</span>
-                        <span className="col-span-8 text-slate-600 font-normal">{primaryNominee.address}</span>
+                        <span className="col-span-8 text-slate-600 font-normal break-words">{primaryNominee.address}</span>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <p className="text-[10px] text-slate-400 font-bold text-center py-2">কোনো মনোনীত ব্যক্তির তথ্য পাওয়া যায়নি।</p>
+                  <p className="text-[9px] text-slate-400 font-bold text-center py-1">কোনো মনোনীত ব্যক্তির তথ্য পাওয়া যায়নি।</p>
                 )}
               </div>
 
@@ -381,14 +393,14 @@ export const ShareCertificate: React.FC = () => {
           </div>
 
           {/* Legal / Rules Box - Requested Terms and Conditions */}
-          <div className="p-4 bg-slate-50 border border-slate-250 rounded-xl space-y-2 text-xs text-slate-800 terms-box">
-            <div className="font-extrabold text-blue-950 uppercase tracking-wider pb-1 border-b border-slate-200/80 flex items-center gap-1.5">
-              <FileText className="w-4 h-4 text-amber-600" />
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-[10px] sm:text-xs text-slate-800 terms-box">
+            <div className="font-extrabold text-blue-950 uppercase tracking-wider pb-1 border-b border-slate-200 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-amber-600" />
               <span>বিশেষ শর্তাবলী ও নীতিমালা (Terms & Conditions)</span>
             </div>
-            <ol className="list-decimal pl-5 font-bold space-y-1.5 text-slate-700 leading-relaxed">
+            <ol className="list-decimal pl-4 font-bold space-y-1 text-slate-700 leading-relaxed text-[9px] sm:text-[10px]">
               <li>
-                সদস্যপদ গ্রহণের তারিখ হতে ২ (দুই) বছর পূর্ণ হওয়ার পূর্বে কোনো সদস্য নিজ ইচ্ছায় সদস্যপদ বাতিল করলে, সদস্যের মোট জমাকৃত অর্থের উপর ২০% কর্তন করা হবে।
+                সদস্যপদ গ্রহণের তারিখ হতে ২ (দুই) বছর পূরণ হওয়ার পূর্বে কোনো সদস্য নিজ ইচ্ছায় সদস্যপদ বাতিল করলে, সদস্যের মোট জমাকৃত অর্থের উপর ২০% কর্তন করা হবে।
               </li>
               <li>
                 প্রতি মাসের ১ তারিখ হতে ১৫ তারিখের মধ্যে মাসিক চাঁদা পরিশোধ করতে হবে। নির্ধারিত সময়ের মধ্যে মাসিক চাঁদা পরিশোধ না করলে ২০০/- (দুইশত) টাকা জরিমানা প্রযোজ্য হবে।
@@ -400,24 +412,24 @@ export const ShareCertificate: React.FC = () => {
           </div>
 
           {/* Official Signatures Row */}
-          <div className="pt-12 grid grid-cols-3 text-center text-[11px] font-bold text-slate-800 signatures-row">
+          <div className="pt-6 grid grid-cols-3 text-center text-[10px] sm:text-[11px] font-bold text-slate-800 signatures-row">
             <div>
-              <div className="font-serif italic text-blue-900 text-xs mb-1">{settings.presidentName || 'মো: ফয়েজুর রহমান খান'}</div>
-              <div className="border-t-2 border-slate-800 pt-1 w-32 mx-auto">
+              <div className="font-serif italic text-blue-900 text-xs mb-0.5">{settings.presidentName || 'মো: ফয়েজুর রহমান খান'}</div>
+              <div className="border-t-2 border-slate-800 pt-0.5 w-24 mx-auto">
                 সভাপতি (President)
               </div>
             </div>
 
             <div>
-              <div className="font-serif italic text-blue-900 text-xs mb-1">{settings.secretaryName || 'মো: মনিরুজ্জামান'}</div>
-              <div className="border-t-2 border-slate-800 pt-1 w-40 mx-auto">
+              <div className="font-serif italic text-blue-900 text-xs mb-0.5">{settings.secretaryName || 'মো: মনিরুজ্জামান'}</div>
+              <div className="border-t-2 border-slate-800 pt-0.5 w-32 mx-auto">
                 সাধারণ সম্পাদক (General Secretary)
               </div>
             </div>
 
             <div>
-              <div className="font-serif italic text-blue-900 text-xs mb-1">{settings.treasurerName || 'মো: মাহবুব সরকার'}</div>
-              <div className="border-t-2 border-slate-800 pt-1 w-32 mx-auto">
+              <div className="font-serif italic text-blue-900 text-xs mb-0.5">{settings.treasurerName || 'মো: মাহবুব সরকার'}</div>
+              <div className="border-t-2 border-slate-800 pt-0.5 w-24 mx-auto">
                 ক্যাশিয়ার (Cashier)
               </div>
             </div>
