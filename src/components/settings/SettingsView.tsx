@@ -572,7 +572,7 @@ export const SettingsView: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">সভাপতির নাম (President)</label>
+              <label className="block font-bold text-slate-700 mb-1">সভাপতির নাম</label>
               <input
                 type="text"
                 value={formData.presidentName}
@@ -582,7 +582,7 @@ export const SettingsView: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">সাধারণ সম্পাদকের নাম (Secretary)</label>
+              <label className="block font-bold text-slate-700 mb-1">সাধারণ সম্পাদকের নাম</label>
               <input
                 type="text"
                 value={formData.secretaryName}
@@ -592,7 +592,7 @@ export const SettingsView: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">ক্যাশিয়ারের নাম (Cashier)</label>
+              <label className="block font-bold text-slate-700 mb-1">ক্যাশিয়ারের নাম</label>
               <input
                 type="text"
                 value={formData.treasurerName}

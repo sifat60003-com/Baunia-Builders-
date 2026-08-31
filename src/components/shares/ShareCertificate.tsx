@@ -34,10 +34,19 @@ export const ShareCertificate: React.FC = () => {
     selectedCertMemberId || members[0]?.id || ''
   );
 
+  const [localNomineePhoto, setLocalNomineePhoto] = useState<string | null>(null);
+  const [localMemberPhoto, setLocalMemberPhoto] = useState<string | null>(null);
+
   const memberPhotoInputRef = useRef<HTMLInputElement>(null);
   const nomineePhotoInputRef = useRef<HTMLInputElement>(null);
 
   const member = members.find(m => m.id === currentCertMemberId) || members[0];
+
+  // Reset local preview on member change
+  React.useEffect(() => {
+    setLocalNomineePhoto(null);
+    setLocalMemberPhoto(null);
+  }, [currentCertMemberId]);
 
   const handlePrint = () => {
     window.print();
@@ -64,7 +73,10 @@ export const ShareCertificate: React.FC = () => {
     percentage: 100
   };
 
+  const memberPhotoUrl = localMemberPhoto || member.photoUrl;
+
   const nomineePhotoUrl = 
+    localNomineePhoto ||
     primaryNominee?.photoUrl || 
     (primaryNominee as any)?.photo || 
     (primaryNominee as any)?.imageUrl ||
@@ -89,6 +101,7 @@ export const ShareCertificate: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
+        setLocalMemberPhoto(result);
         updateMember(member.id, { photoUrl: result });
         showToast('সদস্যের ছবি সফলভাবে যুক্ত ও সংরক্ষণ করা হয়েছে!', 'success');
       };
@@ -107,6 +120,7 @@ export const ShareCertificate: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
+        setLocalNomineePhoto(result);
         let updatedNominees = [...(member.nominees || [])];
         if (updatedNominees.length === 0) {
           updatedNominees = [{
@@ -422,9 +436,9 @@ export const ShareCertificate: React.FC = () => {
                   {/* Member Photo */}
                   <div className="flex flex-col items-center group relative">
                     <div className="w-20 h-25 sm:w-22 sm:h-27 bg-white border-2 border-blue-900 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs shrink-0 photo-container">
-                      {member.photoUrl ? (
+                      {memberPhotoUrl ? (
                         <img
-                          src={member.photoUrl}
+                          src={memberPhotoUrl}
                           alt={member.nameBn}
                           className="w-full h-full object-cover"
                           crossOrigin="anonymous"
@@ -558,21 +572,21 @@ export const ShareCertificate: React.FC = () => {
             <div>
               <div className="font-serif italic text-blue-900 text-xs sm:text-sm mb-1">{settings.presidentName || 'মো: ফয়েজুর রহমান খান'}</div>
               <div className="border-t-2 border-slate-800 pt-0.5 w-26 sm:w-30 mx-auto">
-                সভাপতি (President)
+                সভাপতি
               </div>
             </div>
 
             <div>
               <div className="font-serif italic text-blue-900 text-xs sm:text-sm mb-1">{settings.secretaryName || 'মো: মনিরুজ্জামান'}</div>
               <div className="border-t-2 border-slate-800 pt-0.5 w-32 sm:w-36 mx-auto">
-                সাধারণ সম্পাদক (General Secretary)
+                সাধারণ সম্পাদক
               </div>
             </div>
 
             <div>
               <div className="font-serif italic text-blue-900 text-xs sm:text-sm mb-1">{settings.treasurerName || 'মো: মাহবুব সরকার'}</div>
               <div className="border-t-2 border-slate-800 pt-0.5 w-26 sm:w-30 mx-auto">
-                ক্যাশিয়ার (Cashier)
+                ক্যাশিয়ার
               </div>
             </div>
           </div>

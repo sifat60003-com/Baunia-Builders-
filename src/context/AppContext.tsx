@@ -558,11 +558,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           id: n.id || `NOM-${m.id}-${Math.random().toString(36).substring(2, 7)}`,
           name: n.name || '',
           relation: n.relation || 'নমিনী',
-          nidBirthReg: n.nid_birth_reg || '',
+          nidBirthReg: n.nid_birth_reg || n.nidBirthReg || '',
           mobile: n.mobile || '',
           address: n.address || '',
           percentage: Number(n.percentage) || 0,
-          photoUrl: n.photo_url || n.photoUrl || (m as any).nominee_photo || (m as any).nominee_photo_url || undefined,
+          photoUrl: n.photo_url || n.photoUrl || n.photo || n.imageUrl || (m as any).nominee_photo || (m as any).nominee_photo_url || undefined,
         }))
       : [];
 
@@ -971,11 +971,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (recs) setReceipts(recs.map(mapSupabaseReceipt));
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, async () => {
-        const { data: mems } = await supabase.from('members').select('*');
+        const { data: mems } = await supabase.from('members').select('*, nominees(*)');
         if (mems) {
           if (mems.length > 0) {
             membersColumnsRef.current = getTableColumns(mems[0]);
           }
+          setMembers(mems.map(mapSupabaseMember));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nominees' }, async () => {
+        const { data: mems } = await supabase.from('members').select('*, nominees(*)');
+        if (mems) {
           setMembers(mems.map(mapSupabaseMember));
         }
       })
@@ -1072,7 +1078,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const { data: recs } = await supabase.from('receipts').select('*');
         if (recs) setReceipts(recs.map(mapSupabaseReceipt));
 
-        const { data: mems } = await supabase.from('members').select('*');
+        const { data: mems } = await supabase.from('members').select('*, nominees(*)');
         if (mems) {
           if (mems.length > 0) {
             membersColumnsRef.current = getTableColumns(mems[0]);
@@ -1418,10 +1424,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           supabasePayload.nominee_mobile = firstNominee.mobile || '';
           supabasePayload.nominee_phone = firstNominee.mobile || '';
           supabasePayload.nominee_contact = firstNominee.mobile || '';
+          supabasePayload.nominee_address = firstNominee.address || '';
           supabasePayload.nominee_share_percent = Number(firstNominee.percentage) || 100;
           supabasePayload.nominee_percentage = Number(firstNominee.percentage) || 100;
+          if (firstNominee.photoUrl) {
+            supabasePayload.nominee_photo = firstNominee.photoUrl;
+            supabasePayload.nominee_photo_url = firstNominee.photoUrl;
+          }
         }
       }
+
+      if ((memberData as any).nominee_photo !== undefined) {
+        supabasePayload.nominee_photo = (memberData as any).nominee_photo;
+        supabasePayload.nominee_photo_url = (memberData as any).nominee_photo;
+      }
+      if ((memberData as any).nominee_photo_url !== undefined) {
+        supabasePayload.nominee_photo_url = (memberData as any).nominee_photo_url;
+      }
+      if ((memberData as any).nominee_name !== undefined) supabasePayload.nominee_name = (memberData as any).nominee_name;
+      if ((memberData as any).nominee_relation !== undefined) supabasePayload.nominee_relation = (memberData as any).nominee_relation;
+      if ((memberData as any).nominee_nid !== undefined) supabasePayload.nominee_nid = (memberData as any).nominee_nid;
+      if ((memberData as any).nominee_mobile !== undefined) supabasePayload.nominee_mobile = (memberData as any).nominee_mobile;
+      if ((memberData as any).nominee_address !== undefined) supabasePayload.nominee_address = (memberData as any).nominee_address;
 
       supabasePayload.updated_at = new Date().toISOString();
 
