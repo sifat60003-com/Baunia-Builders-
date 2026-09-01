@@ -2,8 +2,8 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export const getSupabaseCredentials = () => {
   const metaEnv = (import.meta as any).env || {};
-  const url = metaEnv.VITE_SUPABASE_URL || localStorage.getItem('supabase_url') || '';
-  const key = metaEnv.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || '';
+  const url = metaEnv.VITE_SUPABASE_URL || localStorage.getItem('supabase_url') || 'https://ncvhmmdgqqduvequnnns.supabase.co';
+  const key = metaEnv.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jdmhtbWRncXFkdXZlcXVubm5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyNjA0NjMsImV4cCI6MjEwMzgzNjQ2M30.8htBZGuF8D9ad_w_D_zgseMG0NTkeKxbkegh2JftLZ4';
   return { url: url.trim(), key: key.trim() };
 };
 

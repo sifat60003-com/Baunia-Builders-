@@ -685,8 +685,10 @@ export const SettingsView: React.FC = () => {
                     আপনার Supabase Dashboard ➔ SQL Editor-এ গিয়ে নিচের কোডটুকু রান করুন, এতে সকল টেবিল তৈরি হয়ে যাবে:
                   </p>
                   <pre className="p-2 bg-slate-900 text-emerald-400 font-mono rounded text-[10px] overflow-x-auto select-all max-h-48">
-{`CREATE TABLE IF NOT EXISTS settings (
-  id TEXT PRIMARY KEY DEFAULT 'default',
+{`-- ১. সেটিংস টেবিল
+CREATE TABLE IF NOT EXISTS settings (
+  id TEXT PRIMARY KEY,
+  data JSONB,
   name_bn TEXT,
   name_en TEXT,
   president_name TEXT,
@@ -698,32 +700,66 @@ export const SettingsView: React.FC = () => {
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- ২. সদস্য টেবিল (নমিনি বাদে পরিষ্কার ফিল্ডস)
 CREATE TABLE IF NOT EXISTS members (
   id TEXT PRIMARY KEY,
-  member_no INT,
+  member_no TEXT,
   name_bn TEXT,
   name_en TEXT,
   father_name TEXT,
   mother_name TEXT,
+  spouse_name TEXT,
+  dob TEXT,
+  birth_date TEXT,
+  gender TEXT DEFAULT 'male',
+  religion TEXT DEFAULT 'islam',
+  nationality TEXT DEFAULT 'Bangladeshi',
+  nid TEXT,
+  birth_reg_no TEXT,
   mobile TEXT,
   alt_mobile TEXT,
+  email TEXT,
   occupation TEXT,
   present_address TEXT,
   permanent_address TEXT,
+  photo_url TEXT,
+  photo_back_url TEXT,
+  pin TEXT,
+  is_pin_set BOOLEAN DEFAULT false,
   join_date TEXT,
   status TEXT DEFAULT 'active',
-  share_qty INT DEFAULT 1,
+  share_qty NUMERIC DEFAULT 1,
+  share_value NUMERIC DEFAULT 25000,
   opening_balance NUMERIC DEFAULT 0,
   current_due NUMERIC DEFAULT 25000,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- ৩. নমিনি টেবিল (সদস্যের সাথে ফরেন কি দিয়ে লিঙ্কড)
+CREATE TABLE IF NOT EXISTS nominees (
+  id TEXT PRIMARY KEY,
+  member_id TEXT REFERENCES members(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  relation TEXT,
+  nid_birth_reg TEXT,
+  mobile TEXT,
+  address TEXT,
+  percentage NUMERIC DEFAULT 100,
+  photo_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_nominees_member_id ON nominees(member_id);
+
+-- ৪. জমা রশিদ টেবিল
 CREATE TABLE IF NOT EXISTS receipts (
   id TEXT PRIMARY KEY,
   receipt_no TEXT,
-  member_id TEXT,
+  member_id TEXT REFERENCES members(id) ON DELETE CASCADE,
   member_name TEXT,
+  member_no TEXT,
   amount NUMERIC DEFAULT 0,
   date TEXT,
   type TEXT,
@@ -740,65 +776,96 @@ CREATE TABLE IF NOT EXISTS receipts (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- ৫. আয় টেবিল
 CREATE TABLE IF NOT EXISTS incomes (
   id TEXT PRIMARY KEY,
   income_id TEXT,
   date TEXT,
+  source TEXT,
   category TEXT,
   description TEXT,
-  amount NUMERIC,
+  amount NUMERIC DEFAULT 0,
   payment_method TEXT,
   ref_number TEXT,
+  receipt_no TEXT,
+  received_by TEXT,
   added_by TEXT,
+  notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- ৬. ব্যয় টেবিল
 CREATE TABLE IF NOT EXISTS expenses (
   id TEXT PRIMARY KEY,
   expense_id TEXT,
   date TEXT,
   category TEXT,
   description TEXT,
-  amount NUMERIC,
+  amount NUMERIC DEFAULT 0,
+  paid_to TEXT,
   payment_method TEXT,
   ref_number TEXT,
+  voucher_no TEXT,
   approved_by TEXT,
   added_by TEXT,
-  status TEXT,
+  status TEXT DEFAULT 'approved',
+  notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- ৭. শেয়ার টেবিল
 CREATE TABLE IF NOT EXISTS shares (
   id TEXT PRIMARY KEY,
-  member_id TEXT,
+  member_id TEXT REFERENCES members(id) ON DELETE CASCADE,
   member_name TEXT,
-  type TEXT,
-  share_qty INT,
-  share_price NUMERIC,
-  total_amount NUMERIC,
-  date TEXT,
   certificate_no TEXT,
+  share_count NUMERIC DEFAULT 1,
+  share_qty INT DEFAULT 1,
+  face_value NUMERIC DEFAULT 25000,
+  share_price NUMERIC DEFAULT 25000,
+  total_value NUMERIC DEFAULT 25000,
+  total_amount NUMERIC DEFAULT 25000,
+  type TEXT,
+  date TEXT,
+  issue_date TEXT,
+  status TEXT DEFAULT 'active',
   approved_by TEXT,
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- ৮. এফডিআর টেবিল
+CREATE TABLE IF NOT EXISTS fdrs (
+  id TEXT PRIMARY KEY,
+  member_id TEXT REFERENCES members(id) ON DELETE CASCADE,
+  fdr_no TEXT,
+  amount NUMERIC DEFAULT 0,
+  interest_rate NUMERIC DEFAULT 0,
+  start_date TEXT,
+  duration_months NUMERIC DEFAULT 12,
+  maturity_date TEXT,
+  status TEXT DEFAULT 'running',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ৯. ইউজার টেবিল
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
+  username TEXT,
   name TEXT,
   email TEXT,
   phone TEXT,
-  role TEXT,
-  status TEXT,
+  mobile TEXT,
+  role TEXT DEFAULT 'staff',
+  permissions JSONB DEFAULT '[]'::jsonb,
+  password_hash TEXT,
+  status TEXT DEFAULT 'active',
   avatar TEXT,
   last_login TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Ensure avatar column exists on existing installations
-ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP WITH TIME ZONE;
-
+-- ১০. লেনদেন লেজার টেবিল
 CREATE TABLE IF NOT EXISTS transactions (
   id TEXT PRIMARY KEY,
   transaction_id TEXT,
@@ -806,50 +873,26 @@ CREATE TABLE IF NOT EXISTS transactions (
   type TEXT,
   ref_id TEXT,
   description TEXT,
+  amount NUMERIC DEFAULT 0,
   debit NUMERIC DEFAULT 0,
   credit NUMERIC DEFAULT 0,
   balance NUMERIC DEFAULT 0,
   user_name TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS monthly_dues (
-  id TEXT PRIMARY KEY,
   member_id TEXT,
-  month TEXT,
-  amount NUMERIC DEFAULT 0,
-  status TEXT DEFAULT 'pending',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS notifications (
-  id TEXT PRIMARY KEY,
-  title TEXT,
-  message TEXT,
-  type TEXT,
-  read BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS audit_logs (
-  id TEXT PRIMARY KEY,
-  action TEXT,
-  details TEXT,
-  user_name TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
+-- RLS পারমিশন ডিজাবল / উন্মুক্তকরণ
 ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE members DISABLE ROW LEVEL SECURITY;
+ALTER TABLE nominees DISABLE ROW LEVEL SECURITY;
 ALTER TABLE receipts DISABLE ROW LEVEL SECURITY;
 ALTER TABLE incomes DISABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses DISABLE ROW LEVEL SECURITY;
 ALTER TABLE shares DISABLE ROW LEVEL SECURITY;
+ALTER TABLE fdrs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE monthly_dues DISABLE ROW LEVEL SECURITY;
-ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
-ALTER TABLE audit_logs DISABLE ROW LEVEL SECURITY;`}
+ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;`}
                   </pre>
                 </div>
               )}

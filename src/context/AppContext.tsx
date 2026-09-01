@@ -1361,19 +1361,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updated_at: newMember.updatedAt
       };
 
-      // Support flat nominee columns if they exist in the members table
-      if (firstNominee) {
-        memberPayload.nominee_name = firstNominee.name || '';
-        memberPayload.nominee_relation = firstNominee.relation || '';
-        memberPayload.nominee_nid = firstNominee.nidBirthReg || '';
-        memberPayload.nominee_nid_birth_reg = firstNominee.nidBirthReg || '';
-        memberPayload.nominee_mobile = firstNominee.mobile || '';
-        memberPayload.nominee_phone = firstNominee.mobile || '';
-        memberPayload.nominee_contact = firstNominee.mobile || '';
-        memberPayload.nominee_share_percent = Number(firstNominee.percentage) || 100;
-        memberPayload.nominee_percentage = Number(firstNominee.percentage) || 100;
-      }
-
       // DYNAMIC COLUMN FILTERING FOR MEMBERS TABLE INSERTION
       if (membersColumnsRef.current.length > 0) {
         Object.keys(memberPayload).forEach(key => {
@@ -1510,40 +1497,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (memberData.openingBalance !== undefined) supabasePayload.opening_balance = memberData.openingBalance;
       if (memberData.currentDue !== undefined) supabasePayload.current_due = memberData.currentDue;
       if (memberData.notes !== undefined) supabasePayload.notes = memberData.notes;
-
-      // Support flat nominee columns if they exist in the members table
-      if (memberData.nominees !== undefined) {
-        const firstNominee = memberData.nominees?.[0];
-        if (firstNominee) {
-          supabasePayload.nominee_name = firstNominee.name || '';
-          supabasePayload.nominee_relation = firstNominee.relation || '';
-          supabasePayload.nominee_nid = firstNominee.nidBirthReg || '';
-          supabasePayload.nominee_nid_birth_reg = firstNominee.nidBirthReg || '';
-          supabasePayload.nominee_mobile = firstNominee.mobile || '';
-          supabasePayload.nominee_phone = firstNominee.mobile || '';
-          supabasePayload.nominee_contact = firstNominee.mobile || '';
-          supabasePayload.nominee_address = firstNominee.address || '';
-          supabasePayload.nominee_share_percent = Number(firstNominee.percentage) || 100;
-          supabasePayload.nominee_percentage = Number(firstNominee.percentage) || 100;
-          if (firstNominee.photoUrl) {
-            supabasePayload.nominee_photo = firstNominee.photoUrl;
-            supabasePayload.nominee_photo_url = firstNominee.photoUrl;
-          }
-        }
-      }
-
-      if ((memberData as any).nominee_photo !== undefined) {
-        supabasePayload.nominee_photo = (memberData as any).nominee_photo;
-        supabasePayload.nominee_photo_url = (memberData as any).nominee_photo;
-      }
-      if ((memberData as any).nominee_photo_url !== undefined) {
-        supabasePayload.nominee_photo_url = (memberData as any).nominee_photo_url;
-      }
-      if ((memberData as any).nominee_name !== undefined) supabasePayload.nominee_name = (memberData as any).nominee_name;
-      if ((memberData as any).nominee_relation !== undefined) supabasePayload.nominee_relation = (memberData as any).nominee_relation;
-      if ((memberData as any).nominee_nid !== undefined) supabasePayload.nominee_nid = (memberData as any).nominee_nid;
-      if ((memberData as any).nominee_mobile !== undefined) supabasePayload.nominee_mobile = (memberData as any).nominee_mobile;
-      if ((memberData as any).nominee_address !== undefined) supabasePayload.nominee_address = (memberData as any).nominee_address;
 
       supabasePayload.updated_at = new Date().toISOString();
 
@@ -2474,20 +2427,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           updated_at: m.updatedAt || new Date().toISOString()
         };
 
-        // Support flat nominee columns if they exist in the members table
-        if (m.nominees && m.nominees.length > 0) {
-          const firstNominee = m.nominees[0];
-          rowPayload.nominee_name = firstNominee.name || '';
-          rowPayload.nominee_relation = firstNominee.relation || '';
-          rowPayload.nominee_nid = firstNominee.nidBirthReg || '';
-          rowPayload.nominee_nid_birth_reg = firstNominee.nidBirthReg || '';
-          rowPayload.nominee_mobile = firstNominee.mobile || '';
-          rowPayload.nominee_phone = firstNominee.mobile || '';
-          rowPayload.nominee_contact = firstNominee.mobile || '';
-          rowPayload.nominee_share_percent = Number(firstNominee.percentage) || 100;
-          rowPayload.nominee_percentage = Number(firstNominee.percentage) || 100;
-        }
-
         // DYNAMIC COLUMN FILTERING
         if (membersColumnsRef.current.length > 0) {
           Object.keys(rowPayload).forEach(key => {
@@ -2504,8 +2443,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         throw new Error(`সদস্য আপলোডে সমস্যা: ${mErr.message}`);
       }
 
-      showToast(language === 'bn' ? 'সফলভাবে ৯৬ জন সদস্যের তথ্য সুপাবেজে আপলোড করা হয়েছে!' : '96 members successfully uploaded to Supabase!', 'success');
-      return { success: true, message: 'সফলভাবে ৯৬ জন সদস্যের তথ্য সুপাবেজে আপলোড করা হয়েছে!', count: 96 };
+      // Sync nominees to nominees table with foreign key linkage
+      const allNomineeRows: any[] = [];
+      fresh96.forEach(m => {
+        if (m.nominees && m.nominees.length > 0) {
+          m.nominees.forEach((n, idx) => {
+            allNomineeRows.push({
+              id: `${m.id}_nom_${idx + 1}`,
+              member_id: m.id,
+              name: n.name || '',
+              relation: n.relation || '',
+              nid_birth_reg: n.nidBirthReg || '',
+              mobile: n.mobile || '',
+              address: n.address || '',
+              percentage: Number(n.percentage) || 100,
+              photo_url: n.photoUrl || ''
+            });
+          });
+        }
+      });
+
+      if (allNomineeRows.length > 0) {
+        const { error: nomErr } = await supabase.from('nominees').upsert(allNomineeRows);
+        if (nomErr) {
+          console.warn('Nominees sync error:', nomErr.message);
+        }
+      }
+
+      showToast(language === 'bn' ? 'সফলভাবে ৯৬ জন সদস্য ও নমিনির তথ্য সুপাবেজে আপলোড করা হয়েছে!' : '96 members and nominees uploaded to Supabase!', 'success');
+      return { success: true, message: 'সফলভাবে ৯৬ জন সদস্য ও নমিনির তথ্য সুপাবেজে আপলোড করা হয়েছে!', count: 96 };
     } catch (err: any) {
       console.error('Reimport err:', err);
       showToast(err.message || 'আপলোডে সমস্যা হয়েছে', 'error');
