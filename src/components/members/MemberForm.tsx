@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Nominee, Gender, MemberStatus } from '../../types';
 import { formatCurrency, toBnDigits } from '../../utils/formatters';
+import { supabase } from '../../lib/supabase';
 import { compressImage } from '../../utils/imageCompressor';
 
 export const MemberForm: React.FC = () => {
@@ -224,34 +225,56 @@ export const MemberForm: React.FC = () => {
   const handleMemberPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     if (file.size > 10 * 1024 * 1024) {
       showToast('ছবির সাইজ ১০MB এর কম হতে হবে', 'warning');
       return;
     }
+
+    if (photoUrl && photoUrl.includes('/storage/v1/object/public/photos/')) {
+        const oldPath = photoUrl.split('/public/photos/')[1];
+        if (oldPath) await supabase.storage.from('photos').remove([oldPath]);
+    }
+
     try {
-      const compressed = await compressImage(file, 480, 480, 0.75);
-      setPhotoUrl(compressed);
+      const compressedBlob = await compressImage(file, 800, 800, 0.75);
+      const fileName = `members/${Date.now()}-${file.name.replace(/\s+/g, '-')}.webp`;
+      const { error } = await supabase.storage.from('photos').upload(fileName, compressedBlob, { contentType: 'image/webp' });
+      if (error) throw error;
+      const { data } = supabase.storage.from('photos').getPublicUrl(fileName);
+      setPhotoUrl(data.publicUrl);
       showToast('সদস্যের ছবি আপলোড হয়েছে', 'success');
     } catch (err) {
-      console.error('Failed to compress photo:', err);
-      showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+      console.error('Failed to upload photo:', err);
+      showToast('ছবি আপলোড করতে ব্যর্থ হয়েছে', 'error');
     }
   };
 
   const handleMemberPhotoBackUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     if (file.size > 10 * 1024 * 1024) {
       showToast('ছবির সাইজ ১০MB এর কম হতে হবে', 'warning');
       return;
     }
+
+    if (photoBackUrl && photoBackUrl.includes('/storage/v1/object/public/photos/')) {
+        const oldPath = photoBackUrl.split('/public/photos/')[1];
+        if (oldPath) await supabase.storage.from('photos').remove([oldPath]);
+    }
+
     try {
-      const compressed = await compressImage(file, 640, 640, 0.75);
-      setPhotoBackUrl(compressed);
+      const compressedBlob = await compressImage(file, 800, 800, 0.75);
+      const fileName = `members/${Date.now()}-${file.name.replace(/\s+/g, '-')}.webp`;
+      const { error } = await supabase.storage.from('photos').upload(fileName, compressedBlob, { contentType: 'image/webp' });
+      if (error) throw error;
+      const { data } = supabase.storage.from('photos').getPublicUrl(fileName);
+      setPhotoBackUrl(data.publicUrl);
       showToast('NID/আইডি কার্ডের পিছনের অংশের ছবি আপলোড হয়েছে', 'success');
     } catch (err) {
-      console.error('Failed to compress photo back:', err);
-      showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+      console.error('Failed to upload photo back:', err);
+      showToast('ছবি আপলোড করতে ব্যর্থ হয়েছে', 'error');
     }
   };
 
@@ -646,6 +669,7 @@ export const MemberForm: React.FC = () => {
                   <img
                     src={photoUrl}
                     alt="Member Preview"
+                    loading="lazy"
                     className="w-14 h-14 rounded-2xl object-cover ring-2 ring-blue-500/30 shadow-xs shrink-0 bg-slate-100"
                   />
                 ) : (
@@ -697,6 +721,7 @@ export const MemberForm: React.FC = () => {
                   <img
                     src={photoBackUrl}
                     alt="Photo Back Preview"
+                    loading="lazy"
                     className="w-14 h-14 rounded-2xl object-cover ring-2 ring-indigo-500/30 shadow-xs shrink-0 bg-slate-100"
                   />
                 ) : (

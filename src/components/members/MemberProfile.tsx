@@ -38,6 +38,7 @@ import {
   isReceiptForMemberId 
 } from '../../utils/monthlySchedule';
 import { compressImage } from '../../utils/imageCompressor';
+import { supabase } from '../../lib/supabase';
 
 export const MemberProfile: React.FC = () => {
   const { 
@@ -81,19 +82,29 @@ export const MemberProfile: React.FC = () => {
   // Direct Photo Upload Handler
   const handleDirectPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && member) {
-      if (file.size > 10 * 1024 * 1024) {
-        showToast('ছবি ফাইলের সাইজ ১০MB এর বেশি হতে পারবে না!', 'error');
-        return;
-      }
-      try {
-        const compressed = await compressImage(file, 480, 480, 0.75);
-        updateMember(member.id, { photoUrl: compressed });
-        showToast('সদস্যের ছবি সফলভাবে আপলোড ও চিহ্নিত করা হয়েছে!', 'success');
-      } catch (err) {
-        console.error('Failed to compress photo:', err);
-        showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
-      }
+    if (!file || !member) return;
+    
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('ছবি ফাইলের সাইজ ১০MB এর বেশি হতে পারবে না!', 'error');
+      return;
+    }
+
+    if (member.photoUrl && member.photoUrl.includes('/storage/v1/object/public/photos/')) {
+        const oldPath = member.photoUrl.split('/public/photos/')[1];
+        if (oldPath) await supabase.storage.from('photos').remove([oldPath]);
+    }
+
+    try {
+      const compressedBlob = await compressImage(file, 800, 800, 0.75);
+      const fileName = `members/${Date.now()}-${file.name.replace(/\s+/g, '-')}.webp`;
+      const { error } = await supabase.storage.from('photos').upload(fileName, compressedBlob, { contentType: 'image/webp' });
+      if (error) throw error;
+      const { data } = supabase.storage.from('photos').getPublicUrl(fileName);
+      updateMember(member.id, { photoUrl: data.publicUrl });
+      showToast('সদস্যের ছবি সফলভাবে আপলোড ও চিহ্নিত করা হয়েছে!', 'success');
+    } catch (err) {
+      console.error('Failed to upload photo:', err);
+      showToast('ছবি আপলোড করতে ব্যর্থ হয়েছে', 'error');
     }
   };
 
@@ -224,6 +235,7 @@ export const MemberProfile: React.FC = () => {
               <img
                 src={member.photoUrl}
                 alt={member.nameBn}
+                loading="lazy"
                 className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover ring-4 ring-white/20 shadow-lg bg-slate-800"
               />
             ) : (
@@ -820,13 +832,24 @@ export const MemberProfile: React.FC = () => {
                               showToast('ফাইলের সাইজ ১০MB এর বেশি হতে পারবে না!', 'error');
                               return;
                             }
+                            
+                            // Cleanup old nominee photo if exists and is Supabase storage
+                            if (nomineePhoto && nomineePhoto.includes('/storage/v1/object/public/photos/')) {
+                                const oldPath = nomineePhoto.split('/public/photos/')[1];
+                                if (oldPath) await supabase.storage.from('photos').remove([oldPath]);
+                            }
+
                             try {
-                              const compressed = await compressImage(file, 480, 480, 0.75);
-                              setNomineePhoto(compressed);
+                              const compressedBlob = await compressImage(file, 800, 800, 0.75);
+                              const fileName = `nominees/${Date.now()}-${file.name.replace(/\s+/g, '-')}.webp`;
+                              const { error } = await supabase.storage.from('photos').upload(fileName, compressedBlob, { contentType: 'image/webp' });
+                              if (error) throw error;
+                              const { data } = supabase.storage.from('photos').getPublicUrl(fileName);
+                              setNomineePhoto(data.publicUrl);
                               showToast('নমিনির ছবি সফলভাবে আপলোড হয়েছে!', 'success');
                             } catch (err) {
-                              console.error('Failed to compress nominee photo:', err);
-                              showToast('ছবি প্রসেস করতে ব্যর্থ হয়েছে', 'error');
+                              console.error('Failed to upload nominee photo:', err);
+                              showToast('ছবি আপলোড করতে ব্যর্থ হয়েছে', 'error');
                             }
                           }
                         }}

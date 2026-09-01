@@ -1,20 +1,15 @@
 /**
- * Image compression utility to prevent LocalStorage quota exceeded errors
- * Resizes large photos to optimal dimensions and compresses to lightweight JPEG.
+ * Image compression utility
+ * Resizes large photos and compresses to WebP.
  */
 
 export async function compressImage(
-  fileOrBase64: File | string,
-  maxWidth = 480,
-  maxHeight = 480,
+  file: File,
+  maxWidth = 800,
+  maxHeight = 800,
   quality = 0.75
-): Promise<string> {
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    // If it's already a small SVG or non-image string
-    if (typeof fileOrBase64 === 'string' && fileOrBase64.startsWith('data:image/svg+xml')) {
-      return resolve(fileOrBase64);
-    }
-
     const img = new Image();
     img.crossOrigin = 'anonymous';
 
@@ -42,57 +37,32 @@ export async function compressImage(
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          resolve(typeof fileOrBase64 === 'string' ? fileOrBase64 : '');
+          reject(new Error('Canvas context not available'));
           return;
         }
 
-        // Fill with white background to handle transparent PNGs converting to JPEG cleanly
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Convert to lightweight JPEG
-        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-        resolve(compressedBase64);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Canvas toBlob failed'));
+          },
+          'image/webp',
+          quality
+        );
       } catch (err) {
-        console.warn('Image compression fallback:', err);
-        // Fallback to original if canvas fails
-        if (typeof fileOrBase64 === 'string') {
-          resolve(fileOrBase64);
-        } else {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(fileOrBase64);
-        }
+        reject(err);
       }
     };
 
-    img.onerror = () => {
-      if (typeof fileOrBase64 === 'string') {
-        resolve(fileOrBase64);
-      } else {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(fileOrBase64);
-      }
-    };
+    img.onerror = () => reject(new Error('Failed to load image'));
 
-    if (typeof fileOrBase64 === 'string') {
-      img.src = fileOrBase64;
-    } else {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          img.src = e.target.result as string;
-        } else {
-          reject(new Error('Failed to read image file'));
-        }
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(fileOrBase64);
-    }
+    const reader = new FileReader();
+    reader.onload = (e) => (img.src = e.target?.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 }
