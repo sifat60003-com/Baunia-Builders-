@@ -2,14 +2,14 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export const getSupabaseCredentials = () => {
   const metaEnv = (import.meta as any).env || {};
-  const url = metaEnv.VITE_SUPABASE_URL || localStorage.getItem('supabase_url') || 'https://hvevhdugdjiuroghesqn.supabase.co';
+  const url = metaEnv.VITE_SUPABASE_URL || localStorage.getItem('supabase_url') || '';
   const key = metaEnv.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || '';
   return { url: url.trim(), key: key.trim() };
 };
 
 export const isSupabaseConfigured = (): boolean => {
   const { url, key } = getSupabaseCredentials();
-  return Boolean(url && key && !url.includes('placeholder'));
+  return Boolean(url && key && !url.includes('placeholder') && url.trim().length > 0 && key.trim().length > 0);
 };
 
 let currentClient: SupabaseClient | null = null;
@@ -41,6 +41,14 @@ export const saveSupabaseCredentials = (url: string, key: string) => {
   currentUrl = validUrl;
   currentKey = validKey;
   currentClient = createClient(validUrl, validKey);
+};
+
+export const disconnectSupabase = () => {
+  localStorage.removeItem('supabase_url');
+  localStorage.removeItem('supabase_anon_key');
+  currentUrl = 'https://placeholder.supabase.co';
+  currentKey = 'placeholder';
+  currentClient = createClient(currentUrl, currentKey);
 };
 
 export const supabase = new Proxy({} as SupabaseClient, {

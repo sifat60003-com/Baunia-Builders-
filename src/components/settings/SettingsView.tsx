@@ -23,11 +23,12 @@ import {
   Check,
   Camera,
   User as UserIcon,
-  Trash2
+  Trash2,
+  Unplug
 } from 'lucide-react';
 import { SystemSettings } from '../../types';
 import defaultLogo from '../../assets/images/baunia_builders_logo_1787932825880.jpg';
-import { getSupabaseCredentials, saveSupabaseCredentials, isSupabaseConfigured, supabase } from '../../lib/supabase';
+import { getSupabaseCredentials, saveSupabaseCredentials, disconnectSupabase, isSupabaseConfigured, supabase } from '../../lib/supabase';
 import { compressImage } from '../../utils/imageCompressor';
 
 export const SettingsView: React.FC = () => {
@@ -118,6 +119,14 @@ export const SettingsView: React.FC = () => {
     saveSupabaseCredentials(sanitizedUrl, spKey);
     setSpUrl(sanitizedUrl); // Update the state
     showToast('Supabase ক্রেডেনশিয়াল সংরক্ষিত হয়েছে!', 'success');
+  };
+
+  const handleDisconnectSupabase = () => {
+    disconnectSupabase();
+    setSpUrl('');
+    setSpKey('');
+    setSyncStatus(null);
+    showToast('সুপাবেজ সংযোগ সফলভাবে বিচ্ছিন্ন (Disconnected) করা হয়েছে!', 'info');
   };
 
   const handleTestSupabase = async () => {
@@ -878,6 +887,17 @@ ALTER TABLE audit_logs DISABLE ROW LEVEL SECURITY;`}
               <Save className="w-4 h-4 text-emerald-400" />
               <span>ক্রেডেনশিয়াল সেভ করুন</span>
             </button>
+
+            {isSupabaseConfigured() && (
+              <button
+                type="button"
+                onClick={handleDisconnectSupabase}
+                className="flex items-center gap-2 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold text-xs transition cursor-pointer"
+              >
+                <Unplug className="w-4 h-4 text-rose-600" />
+                <span>সুপাবেজ সংযোগ বিচ্ছিন্ন করুন (Disconnect)</span>
+              </button>
+            )}
 
             <button
               type="button"
