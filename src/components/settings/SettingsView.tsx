@@ -834,19 +834,27 @@ CREATE TABLE IF NOT EXISTS shares (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- ৮. এফডিআর টেবিল
+-- ৮. এফডিআর টেবিল (প্রতিষ্ঠান/সমিতির স্থায়ী আমানত)
 CREATE TABLE IF NOT EXISTS fdrs (
   id TEXT PRIMARY KEY,
-  member_id TEXT REFERENCES members(id) ON DELETE CASCADE,
   fdr_no TEXT,
+  bank_name TEXT,
   amount NUMERIC DEFAULT 0,
+  date TEXT,
+  tenure_months NUMERIC DEFAULT 12,
   interest_rate NUMERIC DEFAULT 0,
-  start_date TEXT,
-  duration_months NUMERIC DEFAULT 12,
-  maturity_date TEXT,
-  status TEXT DEFAULT 'running',
+  status TEXT DEFAULT 'active',
+  notes TEXT,
+  added_by TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Ensure all FDR columns exist on already created tables
+ALTER TABLE fdrs ADD COLUMN IF NOT EXISTS bank_name TEXT;
+ALTER TABLE fdrs ADD COLUMN IF NOT EXISTS date TEXT;
+ALTER TABLE fdrs ADD COLUMN IF NOT EXISTS tenure_months NUMERIC DEFAULT 12;
+ALTER TABLE fdrs ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE fdrs ADD COLUMN IF NOT EXISTS added_by TEXT;
 
 -- ৯. ইউজার টেবিল
 CREATE TABLE IF NOT EXISTS users (

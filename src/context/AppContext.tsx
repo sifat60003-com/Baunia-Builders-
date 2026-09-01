@@ -617,6 +617,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Refs for tracking actual database columns to prevent schema mismatch errors during updates
   const membersColumnsRef = React.useRef<string[]>([]);
   const nomineesColumnsRef = React.useRef<string[]>([]);
+  const fdrsColumnsRef = React.useRef<string[]>([]);
 
   const showToast = (text: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') => {
     const id = Date.now().toString() + Math.random().toString(36).substring(2, 5);
@@ -820,12 +821,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return {
       id: f.id,
       fdrNo: f.fdr_no || f.fdrNo || f.id,
-      bankName: f.bank_name || f.bankName || '',
+      bankName: f.bank_name || f.bankName || f.bank || 'ব্যাংক',
       amount: Number(f.amount) || 0,
-      date: f.date || '',
-      tenureMonths: Number(f.tenure_months || f.tenureMonths) || 12,
+      date: f.date || f.start_date || f.startDate || new Date().toISOString().split('T')[0],
+      tenureMonths: Number(f.tenure_months || f.duration_months || f.tenureMonths) || 12,
       interestRate: f.interest_rate !== undefined && f.interest_rate !== null ? Number(f.interest_rate) : undefined,
-      status: (f.status || 'active') as 'active' | 'matured' | 'closed',
+      status: (f.status === 'running' || f.status === 'active' ? 'active' : f.status || 'active') as 'active' | 'matured' | 'closed',
       notes: f.notes || '',
       addedBy: f.added_by || f.addedBy || 'System',
       createdAt: f.created_at || f.createdAt || new Date().toISOString()
@@ -1044,9 +1045,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         // 11. FDRs (Safe fetch with try/catch to avoid breaking if table is not created yet)
         try {
-          const { data: fdrsData } = await supabase.from('fdrs').select('*');
-          if (fdrsData && fdrsData.length > 0) {
-            setFdrs(fdrsData.map(mapSupabaseFdr));
+          const { data: fdrsData, error: fErr } = await supabase.from('fdrs').select('*');
+          if (!fErr && fdrsData) {
+            if (fdrsData.length > 0) {
+              fdrsColumnsRef.current = getTableColumns(fdrsData[0]);
+              setFdrs(fdrsData.map(mapSupabaseFdr));
+            } else if (fdrsData.length === 0) {
+              // Table exists and is empty
+              setFdrs([]);
+            }
           }
         } catch (fdrErr) {
           console.warn('FDRs table not found or not accessible yet:', fdrErr);
@@ -1160,8 +1167,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'fdrs' }, async () => {
         try {
-          const { data: fdrsData } = await supabase.from('fdrs').select('*');
-          if (fdrsData) setFdrs(fdrsData.map(mapSupabaseFdr));
+          const { data: fdrsData, error: fErr } = await supabase.from('fdrs').select('*');
+          if (!fErr && fdrsData) {
+            if (fdrsData.length > 0) {
+              fdrsColumnsRef.current = getTableColumns(fdrsData[0]);
+            }
+            setFdrs(fdrsData.map(mapSupabaseFdr));
+          }
         } catch (err) { /* ignore safe fallback */ }
       })
       .subscribe();
@@ -1207,9 +1219,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         // Safe poll for fdrs
         try {
-          const { data: fdrsData } = await supabase.from('fdrs').select('*');
-          if (fdrsData) {
-            setFdrs(fdrsData.map(mapSupabaseFdr));
+          const { data: fdrsData, error: fErr } = await supabase.from('fdrs').select('*');
+          if (!fErr && fdrsData) {
+            if (fdrsData.length > 0) {
+              fdrsColumnsRef.current = getTableColumns(fdrsData[0]);
+              setFdrs(fdrsData.map(mapSupabaseFdr));
+            } else if (fdrsData.length === 0 && fdrsColumnsRef.current.length > 0) {
+              setFdrs([]);
+            }
           }
         } catch (fdrErr) { /* ignore */ }
       } catch (e) {
@@ -1998,7 +2015,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast(t('successDeleted'), 'info');
   };
 
-  const addFdr = (fdrData: Omit<FdrItem, 'id' | 'fdrNo' | 'createdAt'>) => {
+  const addFdr = async (fdrData: Omit<FdrItem, 'id' | 'fdrNo' | 'createdAt'>) => {
     const id = `FDR-${Date.now()}`;
     const fdrNo = `FDR-2026-${String(fdrs.length + 1).padStart(4, '0')}`;
     const now = new Date().toISOString();
@@ -2013,21 +2030,55 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Sync to Supabase
     if (isSupabaseConfigured()) {
-      supabase.from('fdrs').insert([{
+      const payload: any = {
         id: newFdr.id,
         fdr_no: newFdr.fdrNo,
         bank_name: newFdr.bankName,
         amount: newFdr.amount,
         date: newFdr.date,
+        start_date: newFdr.date,
         tenure_months: newFdr.tenureMonths,
-        interest_rate: newFdr.interestRate,
+        duration_months: newFdr.tenureMonths,
+        interest_rate: newFdr.interestRate || 0,
         status: newFdr.status,
-        notes: newFdr.notes,
+        notes: newFdr.notes || '',
         added_by: newFdr.addedBy,
         created_at: newFdr.createdAt
-      }]).then(({ error }) => {
-        if (error) console.error('Error inserting FDR into Supabase:', error);
-      });
+      };
+
+      if (fdrsColumnsRef.current.length > 0) {
+        Object.keys(payload).forEach(k => {
+          if (!fdrsColumnsRef.current.includes(k)) {
+            delete payload[k];
+          }
+        });
+      }
+
+      try {
+        const { error } = await supabase.from('fdrs').upsert([payload]);
+        if (error) {
+          console.warn('Error inserting FDR into Supabase, attempting fallback:', error.message);
+          // Fallback with minimal columns
+          const fallbackPayload: any = {
+            id: newFdr.id,
+            fdr_no: newFdr.fdrNo,
+            amount: newFdr.amount,
+            status: newFdr.status,
+            created_at: newFdr.createdAt
+          };
+          if (newFdr.bankName) fallbackPayload.bank_name = newFdr.bankName;
+          if (newFdr.date) fallbackPayload.date = newFdr.date;
+          if (newFdr.tenureMonths) fallbackPayload.tenure_months = newFdr.tenureMonths;
+
+          const { error: fbErr } = await supabase.from('fdrs').upsert([fallbackPayload]);
+          if (fbErr) {
+            console.error('FDR fallback error:', fbErr.message);
+            showToast(language === 'bn' ? 'FDR লোকালে সংরক্ষিত হয়েছে। Supabase-এ টেবিল আপডেট করতে সেটিংস থেকে SQL রান করুন।' : 'FDR saved locally. Please run SQL in Supabase to update fdrs table.', 'warning');
+          }
+        }
+      } catch (err: any) {
+        console.error('FDR insert exception:', err);
+      }
     }
 
     addAuditLog('FDR_ADD', `FDR তৈরি: ${fdrNo}, পরিমাণ: ৳ ${fdrData.amount}`);
@@ -2375,6 +2426,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         else totalCount += users.length;
       } catch (err: any) {
         errors.push(`ইউজার: ${err.message}`);
+      }
+    }
+
+    // 8. FDRs
+    if (fdrs.length > 0) {
+      try {
+        const fdrPayload = fdrs.map(f => {
+          const row: any = {
+            id: f.id,
+            fdr_no: f.fdrNo,
+            bank_name: f.bankName,
+            amount: f.amount,
+            date: f.date,
+            start_date: f.date,
+            tenure_months: f.tenureMonths,
+            duration_months: f.tenureMonths,
+            interest_rate: f.interestRate || 0,
+            status: f.status,
+            notes: f.notes || '',
+            added_by: f.addedBy,
+            created_at: f.createdAt
+          };
+          if (fdrsColumnsRef.current.length > 0) {
+            Object.keys(row).forEach(k => {
+              if (!fdrsColumnsRef.current.includes(k)) {
+                delete row[k];
+              }
+            });
+          }
+          return row;
+        });
+        const { error: fdrErr } = await supabase.from('fdrs').upsert(fdrPayload);
+        if (fdrErr) errors.push(`FDR: ${fdrErr.message}`);
+        else totalCount += fdrs.length;
+      } catch (err: any) {
+        errors.push(`FDR: ${err.message}`);
       }
     }
 
