@@ -25,10 +25,17 @@ import {
   AlertTriangle,
   MapPin,
   Camera,
-  Upload
+  Upload,
+  Clock,
+  Info,
+  Coins,
+  AlertCircle,
+  FileText,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { LoginView } from '../auth/LoginView';
-import { getMemberMonthlyStatusList, getCurrentRunningMonthId } from '../../utils/monthlySchedule';
+import { getMemberMonthlyStatusList, getCurrentRunningMonthId, getMemberDueMonthsWithFines } from '../../utils/monthlySchedule';
 import { compressImage } from '../../utils/imageCompressor';
 
 type PortalView = 'home' | 'member_search' | 'login';
@@ -38,6 +45,7 @@ export const PublicPortal: React.FC = () => {
   const { members, settings, receipts, updateMember, showToast, addNotification } = useApp();
   const [currentView, setCurrentView] = useState<PortalView>('home');
   const [hasAutoNotified, setHasAutoNotified] = useState(false);
+  const [showAllMonthsSchedule, setShowAllMonthsSchedule] = useState(false);
   
   const [searchPhone, setSearchPhone] = useState('');
   const [searchedMember, setSearchedMember] = useState<any | null>(null);
@@ -956,26 +964,243 @@ export const PublicPortal: React.FC = () => {
                         </div>
 
                         {/* Financial Metrics Cards */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                          <div className="bg-blue-50/70 p-4 rounded-2xl border border-blue-200/70">
-                            <p className="text-xs text-blue-700 font-bold uppercase tracking-wider mb-1">মোট শেয়ার</p>
-                            <p className="font-black text-blue-950 text-2xl sm:text-3xl">{searchedMember.shareQty || 1} টি</p>
-                          </div>
+                        {(() => {
+                          const duesInfo = getMemberDueMonthsWithFines(
+                            searchedMember.id,
+                            receipts,
+                            searchedMember.shareQty || 1,
+                            searchedMember.memberNo
+                          );
 
-                          <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200/70">
-                            <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider mb-1">মোট জমা টাকা</p>
-                            <p className="font-black text-emerald-700 text-xl sm:text-2xl">
-                              ৳ {getMemberTotalDeposit(searchedMember).toLocaleString('en-IN')}
-                            </p>
-                          </div>
+                          return (
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                                <div className="bg-blue-50/70 p-3.5 rounded-2xl border border-blue-200/70">
+                                  <p className="text-[11px] text-blue-700 font-bold uppercase tracking-wider mb-0.5">মোট শেয়ার</p>
+                                  <p className="font-black text-blue-950 text-xl sm:text-2xl">{searchedMember.shareQty || 1} টি</p>
+                                </div>
 
-                          <div className="col-span-2 sm:col-span-1 bg-amber-50/70 p-4 rounded-2xl border border-amber-200/70">
-                            <p className="text-xs text-amber-700 font-bold uppercase tracking-wider mb-1">মাসিক চাঁদা</p>
-                            <p className="font-black text-amber-900 text-xl sm:text-2xl">
-                              ৳ {((searchedMember.shareQty || 1) * 2000).toLocaleString('en-IN')}
-                            </p>
-                          </div>
-                        </div>
+                                <div className="bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-200/70">
+                                  <p className="text-[11px] text-emerald-700 font-bold uppercase tracking-wider mb-0.5">মোট জমা টাকা</p>
+                                  <p className="font-black text-emerald-700 text-lg sm:text-xl">
+                                    ৳ {getMemberTotalDeposit(searchedMember).toLocaleString('en-IN')}
+                                  </p>
+                                </div>
+
+                                <div className="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/70">
+                                  <p className="text-[11px] text-amber-700 font-bold uppercase tracking-wider mb-0.5">মাসিক চাঁদা</p>
+                                  <p className="font-black text-amber-900 text-lg sm:text-xl">
+                                    ৳ {((searchedMember.shareQty || 1) * 2000).toLocaleString('en-IN')}
+                                  </p>
+                                </div>
+
+                                <div className={`p-3.5 rounded-2xl border ${duesInfo.hasDue ? 'bg-rose-50/80 border-rose-200 text-rose-900' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
+                                  <p className="text-[11px] font-bold uppercase tracking-wider mb-0.5 text-rose-700">বকেয়া কিস্তি</p>
+                                  <p className="font-black text-lg sm:text-xl text-rose-700">
+                                    ৳ {duesInfo.totalPrincipalDue.toLocaleString('en-IN')}
+                                  </p>
+                                  <p className="text-[10px] font-semibold text-rose-500 mt-0.5">
+                                    {duesInfo.hasDue ? `${duesInfo.dueMonths.length} টি মাস বকেয়া` : 'কোনো বকেয়া নেই'}
+                                  </p>
+                                </div>
+
+                                <div className={`p-3.5 rounded-2xl border ${duesInfo.hasFine ? 'bg-amber-500/10 border-amber-300 text-amber-900' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-[11px] font-bold uppercase tracking-wider mb-0.5 text-amber-800">বিলম্ব জরিমানা</p>
+                                    <span className="text-[9px] bg-amber-200/80 text-amber-900 font-bold px-1.5 py-0.2 rounded">তথ্যমূলক</span>
+                                  </div>
+                                  <p className="font-black text-lg sm:text-xl text-amber-800">
+                                    ৳ {duesInfo.totalFineAmount.toLocaleString('en-IN')}
+                                  </p>
+                                  <p className="text-[10px] font-semibold text-amber-700 mt-0.5">
+                                    {duesInfo.hasFine ? `${duesInfo.overdueCount} টি মাসে বিলম্ব ফি` : 'জরিমানা নেই'}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Dedicated Due Months and Penalty Statement Card */}
+                              <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                                <div className="bg-slate-900 text-white px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="w-5 h-5 text-amber-400" />
+                                    <div>
+                                      <h4 className="font-bold text-sm sm:text-base">বকেয়া মাস ও প্রযোজ্য জরিমানা বিবরণী</h4>
+                                      <p className="text-[11px] text-slate-300">নির্ধারিত ১৫ তারিখের নিয়ম অনুযায়ী কিস্তি ও জরিমানার হিসাব</p>
+                                    </div>
+                                  </div>
+                                  {duesInfo.hasDue && (
+                                    <span className="bg-rose-500 text-white text-xs font-extrabold px-3 py-1 rounded-full shadow-xs">
+                                      {duesInfo.dueMonths.length} টি মাস বকেয়া
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="p-4 sm:p-5 space-y-4">
+                                  {/* Policy Disclaimer Banner */}
+                                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 sm:p-3.5 flex items-start gap-2.5">
+                                    <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                                    <div className="text-xs text-amber-900 leading-relaxed">
+                                      <p className="font-bold text-amber-950 mb-0.5">মাসিক চাঁদা জমাদান সংক্রান্ত জরুরি নিয়মাবলী:</p>
+                                      <p className="text-amber-900/90">
+                                        প্রতি মাসের <strong className="font-bold text-amber-950">১ তারিখ হতে ১৫ তারিখের মধ্যে</strong> নিয়মিত মাসিক চাঁদা পরিশোধ করতে হবে। নির্ধারিত ১৫ তারিখ অতিক্রান্ত হলে বকেয়া কিস্তির জন্য <strong className="font-bold text-rose-700">২০০/- (দুইশত) টাকা</strong> বিলম্ব জরিমানা প্রযোজ্য হবে।
+                                      </p>
+                                      <p className="text-[11px] font-semibold text-amber-800 mt-1 pt-1 border-t border-amber-200/80">
+                                        * জরিমানার হিসাবটি শুধুমাত্র সদস্য সচেতনতার জন্য প্রদর্শিত। সমিতির মূল বকেয়া হিসাব বা ডেটাবেসের প্রকৃত টাকার সাথে কোনো জরিমানা যোগ করা হয় না।
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* List of Due Months */}
+                                  {duesInfo.hasDue ? (
+                                    <div className="space-y-2.5">
+                                      <h5 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5">
+                                        <AlertTriangle className="w-4 h-4 text-rose-500" />
+                                        <span>বকেয়া মাসসমূহের তালিকা:</span>
+                                      </h5>
+
+                                      <div className="grid grid-cols-1 gap-2.5">
+                                        {duesInfo.dueMonths.map((dueItem, idx) => (
+                                          <div 
+                                            key={idx}
+                                            className={`p-3 sm:p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                              dueItem.isOverdue 
+                                                ? 'bg-rose-50/50 border-rose-200' 
+                                                : 'bg-blue-50/40 border-blue-200'
+                                            }`}
+                                          >
+                                            <div className="space-y-1">
+                                              <div className="flex items-center gap-2">
+                                                <span className="font-bold text-slate-900 text-sm sm:text-base">
+                                                  {dueItem.schedule.nameBn}
+                                                </span>
+                                                {dueItem.schedule.isExtraMonth && (
+                                                  <span className="bg-amber-100 text-amber-900 font-bold text-[10px] px-2 py-0.5 rounded-md">
+                                                    এক্সট্রা কিস্তি সহ
+                                                  </span>
+                                                )}
+                                              </div>
+                                              
+                                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
+                                                <span>পরিশোধের শেষ তারিখ: <strong className="font-semibold text-slate-800">{dueItem.deadlineDateStr}</strong></span>
+                                                <span className="text-slate-300 hidden sm:inline">•</span>
+                                                <span>বকেয়া কিস্তির মূল টাকা: <strong className="font-bold text-slate-900">৳ {dueItem.dueAmount.toLocaleString('en-IN')}</strong></span>
+                                              </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-1.5">
+                                              {dueItem.isOverdue ? (
+                                                <>
+                                                  <span className="bg-rose-100 text-rose-800 font-extrabold text-xs px-2.5 py-1 rounded-lg border border-rose-200 flex items-center gap-1">
+                                                    <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                                                    <span>নির্ধারিত ১৫ তারিখ অতিক্রান্ত</span>
+                                                  </span>
+                                                  <span className="text-xs font-bold text-rose-700 bg-white px-2 py-0.5 rounded-md border border-rose-200 shadow-2xs">
+                                                    প্রযোজ্য জরিমানা: ৳{dueItem.fineAmount}
+                                                  </span>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <span className="bg-blue-100 text-blue-800 font-bold text-xs px-2.5 py-1 rounded-lg border border-blue-200 flex items-center gap-1">
+                                                    <Clock className="w-3.5 h-3.5 text-blue-600" />
+                                                    <span>চলতি সময়সীমা চলমান</span>
+                                                  </span>
+                                                  <span className="text-xs font-semibold text-emerald-700">
+                                                    ১৫ তারিখের পূর্বে জরিমানা মুক্ত
+                                                  </span>
+                                                </>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+
+                                      {/* Total Calculation Footer */}
+                                      <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm">
+                                        <div className="flex items-center gap-2">
+                                          <Coins className="w-4 h-4 text-slate-700" />
+                                          <span className="font-semibold text-slate-700">মোট বকেয়া কিস্তির টাকা:</span>
+                                          <strong className="font-black text-rose-700 text-base sm:text-lg">
+                                            ৳ {duesInfo.totalPrincipalDue.toLocaleString('en-IN')}
+                                          </strong>
+                                        </div>
+
+                                        {duesInfo.hasFine && (
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-amber-800">মোট প্রযোজ্য বিলম্ব ফি:</span>
+                                            <strong className="font-black text-amber-800 text-base sm:text-lg">
+                                              ৳ {duesInfo.totalFineAmount.toLocaleString('en-IN')}
+                                            </strong>
+                                            <span className="text-[10px] text-slate-400">(*মূল হিসেবে যুক্ত নয়)</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex items-center gap-3 text-emerald-900">
+                                      <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                                      <div>
+                                        <h5 className="font-bold text-sm sm:text-base text-emerald-950">অভিনন্দন! কোনো কিস্তি বকেয়া নেই</h5>
+                                        <p className="text-xs text-emerald-800">আপনার চলতি মাস পর্যন্ত সকল মাসিক কিস্তি সম্পূর্ণ ও নিয়মিত পরিশোধিত রয়েছে। ধন্যবাদ।</p>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Toggle Full 12-Month Schedule */}
+                                  <div className="pt-2 border-t border-slate-100">
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowAllMonthsSchedule(prev => !prev)}
+                                      className="w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center justify-center gap-2 transition cursor-pointer"
+                                    >
+                                      <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                      <span>{showAllMonthsSchedule ? 'সকল মাসের কিস্তির স্থিতি বন্ধ করুন' : 'সকল ১২ মাসের কিস্তির পূর্ণাঙ্গ স্থিতি দেখুন'}</span>
+                                      {showAllMonthsSchedule ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                    </button>
+
+                                    {showAllMonthsSchedule && (
+                                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                        {duesInfo.allMonthsStatus.map((mStatus, idx) => (
+                                          <div 
+                                            key={idx}
+                                            className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
+                                              mStatus.status === 'paid' 
+                                                ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950' 
+                                                : mStatus.status === 'due' && mStatus.schedule.id <= getCurrentRunningMonthId()
+                                                  ? 'bg-rose-50/70 border-rose-200 text-rose-950'
+                                                  : mStatus.isNext
+                                                    ? 'bg-blue-50/70 border-blue-200 text-blue-950'
+                                                    : 'bg-slate-50 border-slate-200 text-slate-500'
+                                            }`}
+                                          >
+                                            <div>
+                                              <p className="font-bold">{mStatus.schedule.nameBn}</p>
+                                              <p className="text-[10px] text-slate-500">
+                                                {mStatus.status === 'paid' 
+                                                  ? `পরিশোধিত: ৳${mStatus.paidAmount.toLocaleString('en-IN')}` 
+                                                  : `নির্ধারিত: ৳${mStatus.schedule.totalAmount.toLocaleString('en-IN')}`}
+                                              </p>
+                                            </div>
+                                            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                                              mStatus.status === 'paid' 
+                                                ? 'bg-emerald-100 text-emerald-800' 
+                                                : mStatus.status === 'due' && mStatus.schedule.id <= getCurrentRunningMonthId()
+                                                  ? 'bg-rose-100 text-rose-800'
+                                                  : mStatus.isNext
+                                                    ? 'bg-blue-100 text-blue-800'
+                                                    : 'bg-slate-100 text-slate-600'
+                                            }`}>
+                                              {mStatus.status === 'paid' ? 'পরিশোধিত' : mStatus.status === 'due' && mStatus.schedule.id <= getCurrentRunningMonthId() ? 'বকেয়া' : mStatus.isNext ? 'চলতি' : 'অগ্রিম'}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {/* Detailed Profile Information */}
                         <div className="pt-4 border-t border-slate-200 space-y-4">

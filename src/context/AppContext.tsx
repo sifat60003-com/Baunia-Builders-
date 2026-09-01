@@ -469,10 +469,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     }];
                   } else {
                     const first = { ...updatedNominees[0] };
-                    first.name = nomineeDetails.name;
-                    first.relation = nomineeDetails.relation;
-                    first.nidBirthReg = nomineeDetails.nidBirthReg;
-                    first.mobile = nomineeDetails.mobile;
+                    first.name = first.name || nomineeDetails.name;
+                    first.relation = first.relation || nomineeDetails.relation;
+                    first.nidBirthReg = first.nidBirthReg || nomineeDetails.nidBirthReg;
+                    first.mobile = first.mobile || nomineeDetails.mobile;
+                    first.address = first.address || m.presentAddress || 'বাউনিয়া, তুরাগ, ঢাকা';
+                    first.percentage = first.percentage !== undefined ? first.percentage : 100;
                     updatedNominees = [first, ...updatedNominees.slice(1)];
                   }
                 }
@@ -662,7 +664,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           name: n.name || '',
           relation: n.relation || 'নমিনী',
           nidBirthReg: n.nid_birth_reg || n.nidBirthReg || '',
-          mobile: n.mobile || '',
+          mobile: n.mobile || n.phone || n.contact || '',
           address: n.address || '',
           percentage: Number(n.percentage) || 0,
           photoUrl: n.photo_url || n.photoUrl || n.photo || n.imageUrl || (m as any).nominee_photo || (m as any).nominee_photo_url || undefined,
@@ -673,20 +675,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (nominees.length === 0) {
         nominees.push({
           id: `NOM-${m.id}-1`,
-          name: nomineeDetails.name,
-          relation: nomineeDetails.relation,
-          nidBirthReg: nomineeDetails.nidBirthReg,
-          mobile: nomineeDetails.mobile,
-          address: m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
+          name: m.nominee_name || nomineeDetails.name,
+          relation: m.nominee_relation || nomineeDetails.relation,
+          nidBirthReg: m.nominee_nid || m.nominee_nid_birth_reg || nomineeDetails.nidBirthReg,
+          mobile: m.nominee_mobile || m.nominee_phone || m.nominee_contact || nomineeDetails.mobile,
+          address: m.nominee_address || m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
           percentage: 100,
           photoUrl: (m as any).nominee_photo || (m as any).nominee_photo_url || undefined
         });
       } else {
         const first = { ...nominees[0] };
-        first.name = nomineeDetails.name;
-        first.relation = nomineeDetails.relation;
-        first.nidBirthReg = nomineeDetails.nidBirthReg;
-        first.mobile = nomineeDetails.mobile;
+        first.name = first.name || m.nominee_name || nomineeDetails.name;
+        first.relation = first.relation || m.nominee_relation || nomineeDetails.relation;
+        first.nidBirthReg = first.nidBirthReg || m.nominee_nid || m.nominee_nid_birth_reg || nomineeDetails.nidBirthReg;
+        first.mobile = first.mobile || m.nominee_mobile || m.nominee_phone || m.nominee_contact || nomineeDetails.mobile;
+        first.address = first.address || m.nominee_address || m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা';
         first.photoUrl = first.photoUrl || (m as any).nominee_photo || (m as any).nominee_photo_url || undefined;
         nominees = [first, ...nominees.slice(1)];
       }
@@ -697,7 +700,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         relation: m.nominee_relation || 'নমিনী',
         nidBirthReg: m.nominee_nid || m.nominee_nid_birth_reg || '',
         mobile: m.nominee_mobile || m.nominee_phone || m.nominee_contact || m.mobile || '',
-        address: m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
+        address: m.nominee_address || m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা',
         percentage: Number(m.nominee_share_percent) || Number(m.nominee_percentage) || 100,
         photoUrl: (m as any).nominee_photo || (m as any).nominee_photo_url || undefined
       });
@@ -711,20 +714,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return s === '' || s === '—' || s === '-' || s === '–' || s === 'None' || s === 'null';
     };
 
-    const nameEn = (ext && ext.nameEn && !ext.nameEn.startsWith('Member ')) ? ext.nameEn : (m.name_en || `Member ${memberNoNum}`);
-    const fatherName = (ext && ext.fatherName && !isPlaceholder(ext.fatherName)) ? ext.fatherName : (m.father_name || '—');
-    const motherName = (ext && ext.motherName && !isPlaceholder(ext.motherName)) ? ext.motherName : (m.mother_name || '—');
-    const dob = (ext && ext.dob && ext.dob !== '1990-01-01' && ext.dob !== '1985-01-01') ? ext.dob : (m.birth_date || m.dob || '1990-01-01');
-    const occupation = (ext && ext.occupation) ? ext.occupation : (m.occupation || 'ব্যবসায়ী');
-    const presentAddress = (ext && ext.presentAddress) ? ext.presentAddress : (m.present_address || 'বাউনিয়া, তুরাগ, ঢাকা');
-    const permanentAddress = (ext && ext.permanentAddress) ? ext.permanentAddress : (m.permanent_address || 'বাউনিয়া, তুরাগ, ঢাকা');
+    // Database fields take strict priority over static seed values
+    const nameEn = (m.name_en && !m.name_en.startsWith('Member ')) ? m.name_en : (ext?.nameEn && !ext.nameEn.startsWith('Member ') ? ext.nameEn : (m.name_en || `Member ${memberNoNum}`));
+    const fatherName = (m.father_name && !isPlaceholder(m.father_name)) ? m.father_name : (ext?.fatherName && !isPlaceholder(ext.fatherName) ? ext.fatherName : (m.father_name || '—'));
+    const motherName = (m.mother_name && !isPlaceholder(m.mother_name)) ? m.mother_name : (ext?.motherName && !isPlaceholder(ext.motherName) ? ext.motherName : (m.mother_name || '—'));
+    const dob = (m.birth_date || m.dob) ? (m.birth_date || m.dob) : (ext?.dob && ext.dob !== '1990-01-01' ? ext.dob : '1990-01-01');
+    const occupation = (m.occupation && !isPlaceholder(m.occupation)) ? m.occupation : (ext?.occupation || 'ব্যবসায়ী');
+    const presentAddress = (m.present_address && !isPlaceholder(m.present_address)) ? m.present_address : (ext?.presentAddress || 'বাউনিয়া, তুরাগ, ঢাকা');
+    const permanentAddress = (m.permanent_address && !isPlaceholder(m.permanent_address)) ? m.permanent_address : (ext?.permanentAddress || 'বাউনিয়া, তুরাগ, ঢাকা');
 
-    const rawGender = (ext && ext.gender) ? ext.gender : String(m.gender || '').toLowerCase().trim();
+    const rawGender = m.gender ? String(m.gender).toLowerCase().trim() : (ext && ext.gender ? ext.gender : 'male');
     const gender: Gender = rawGender === 'female' || rawGender === 'মহিলা' ? 'female' : rawGender === 'other' || rawGender === 'অন্যান্য' ? 'other' : 'male';
 
     const calculatedJoinDate = memberNoNum >= 1 && memberNoNum <= 76 
       ? '2025-11-01' 
       : (memberNoNum >= 77 && memberNoNum <= 96 ? '2026-08-01' : (m.join_date || '2026-01-01'));
+    const finalJoinDate = m.join_date || calculatedJoinDate;
 
     return {
       id: m.id,
@@ -740,7 +745,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       occupation: occupation,
       presentAddress: presentAddress,
       permanentAddress: permanentAddress,
-      joinDate: calculatedJoinDate,
+      joinDate: finalJoinDate,
+      religion: m.religion || (ext as any)?.religion || 'ইসলাম',
+      nationality: m.nationality || (ext as any)?.nationality || 'বাংলাদেশী',
       status: m.status || 'active',
       shareQty: shareQty,
       sharePrice: Number(m.share_price) || 100000,
@@ -1378,6 +1385,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updated_at: newMember.updatedAt
       };
 
+      if (firstNominee) {
+        memberPayload.nominee_name = firstNominee.name || '';
+        memberPayload.nominee_relation = firstNominee.relation || '';
+        memberPayload.nominee_nid = firstNominee.nidBirthReg || '';
+        memberPayload.nominee_mobile = firstNominee.mobile || '';
+        memberPayload.nominee_phone = firstNominee.mobile || '';
+        memberPayload.nominee_contact = firstNominee.mobile || '';
+        memberPayload.nominee_address = firstNominee.address || '';
+        memberPayload.nominee_photo = firstNominee.photoUrl || '';
+      }
+
       // DYNAMIC COLUMN FILTERING FOR MEMBERS TABLE INSERTION
       if (membersColumnsRef.current.length > 0) {
         Object.keys(memberPayload).forEach(key => {
@@ -1401,6 +1419,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 relation: n.relation || 'নমিনী',
                 nid_birth_reg: n.nidBirthReg || '',
                 mobile: n.mobile || '',
+                phone: n.mobile || '',
                 address: n.address || '',
                 percentage: Number(n.percentage) || 0,
                 photo_url: n.photoUrl || null,
@@ -1515,6 +1534,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (memberData.currentDue !== undefined) supabasePayload.current_due = memberData.currentDue;
       if (memberData.notes !== undefined) supabasePayload.notes = memberData.notes;
 
+      if (memberData.nominees !== undefined && memberData.nominees.length > 0) {
+        const primaryNom = memberData.nominees[0];
+        supabasePayload.nominee_name = primaryNom.name || '';
+        supabasePayload.nominee_relation = primaryNom.relation || '';
+        supabasePayload.nominee_nid = primaryNom.nidBirthReg || '';
+        supabasePayload.nominee_mobile = primaryNom.mobile || '';
+        supabasePayload.nominee_phone = primaryNom.mobile || '';
+        supabasePayload.nominee_contact = primaryNom.mobile || '';
+        supabasePayload.nominee_address = primaryNom.address || '';
+        supabasePayload.nominee_photo = primaryNom.photoUrl || '';
+      }
+
       supabasePayload.updated_at = new Date().toISOString();
 
       // DYNAMIC COLUMN FILTERING: Prevent errors if database has fewer columns
@@ -1547,6 +1578,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                   relation: n.relation || 'নমিনী',
                   nid_birth_reg: n.nidBirthReg || '',
                   mobile: n.mobile || '',
+                  phone: n.mobile || '',
                   address: n.address || '',
                   percentage: Number(n.percentage) || 0,
                   photo_url: n.photoUrl || null,

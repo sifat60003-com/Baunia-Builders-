@@ -455,3 +455,92 @@ export function getMemberScheduleSummary(
     nextMonthItem
   };
 }
+
+export interface DueMonthWithFine {
+  schedule: MonthScheduleItem;
+  status: 'paid' | 'partial' | 'due' | 'advance';
+  paidAmount: number;
+  dueAmount: number;
+  isOverdue: boolean;
+  isWithinGracePeriod: boolean;
+  fineAmount: number;
+  deadlineDateStr: string;
+  noticeBn: string;
+}
+
+/**
+ * Returns detailed due months list with overdue penalty/fine calculation strictly for Member Portal display.
+ * NOTE: As per strict accounting rules, fine amount must NEVER be added to principal dues or database records.
+ */
+export function getMemberDueMonthsWithFines(
+  memberId: string | number,
+  receipts: Array<any>,
+  shareQty: number = 1,
+  memberNo?: number | string
+) {
+  const currentRunningMonthId = getCurrentRunningMonthId();
+  const statusList = getMemberMonthlyStatusList(memberId, receipts, shareQty, memberNo);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonthNum = now.getMonth() + 1; // 1-12
+  const currentDay = now.getDate();
+
+  const dueMonthsWithFine: DueMonthWithFine[] = [];
+
+  statusList.forEach(item => {
+    if (item.schedule.id <= currentRunningMonthId && (item.status === 'due' || item.status === 'partial') && item.dueAmount > 0) {
+      const schYear = item.schedule.year;
+      const schMonth = item.schedule.monthNumber;
+      
+      const deadlineDateStr = `১৫ ${item.schedule.nameBn}`;
+      
+      let isOverdue = false;
+      let isWithinGracePeriod = false;
+      let fineAmount = 0;
+      let noticeBn = '';
+
+      if (schYear < currentYear || (schYear === currentYear && schMonth < currentMonthNum)) {
+        isOverdue = true;
+        fineAmount = 200; // Standard 200 BDT fine per overdue month
+        noticeBn = `নির্ধারিত ১৫ তারিখ অতিক্রান্ত (বিলম্ব ফি ৳২০০ প্রযোজ্য)`;
+      } else if (schYear === currentYear && schMonth === currentMonthNum) {
+        if (currentDay > 15) {
+          isOverdue = true;
+          fineAmount = 200;
+          noticeBn = `চলতি মাসের নির্ধারিত ১৫ তারিখ অতিক্রান্ত (বিলম্ব ফি ৳২০০ প্রযোজ্য)`;
+        } else {
+          isWithinGracePeriod = true;
+          fineAmount = 0;
+          noticeBn = `চলতি মাসের নিয়মিত সময় চলমান (১-১৫ তারিখের মধ্যে জরিমানা মুক্ত)`;
+        }
+      }
+
+      dueMonthsWithFine.push({
+        schedule: item.schedule,
+        status: item.status,
+        paidAmount: item.paidAmount,
+        dueAmount: item.dueAmount,
+        isOverdue,
+        isWithinGracePeriod,
+        fineAmount,
+        deadlineDateStr,
+        noticeBn,
+      });
+    }
+  });
+
+  const totalPrincipalDue = dueMonthsWithFine.reduce((sum, d) => sum + d.dueAmount, 0);
+  const totalFineAmount = dueMonthsWithFine.reduce((sum, d) => sum + d.fineAmount, 0);
+  const overdueCount = dueMonthsWithFine.filter(d => d.isOverdue).length;
+
+  return {
+    dueMonths: dueMonthsWithFine,
+    totalPrincipalDue,
+    totalFineAmount,
+    overdueCount,
+    hasDue: dueMonthsWithFine.length > 0,
+    hasFine: totalFineAmount > 0,
+    allMonthsStatus: statusList,
+  };
+}
+

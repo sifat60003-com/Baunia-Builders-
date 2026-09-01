@@ -856,6 +856,24 @@ ALTER TABLE fdrs ADD COLUMN IF NOT EXISTS tenure_months NUMERIC DEFAULT 12;
 ALTER TABLE fdrs ADD COLUMN IF NOT EXISTS notes TEXT;
 ALTER TABLE fdrs ADD COLUMN IF NOT EXISTS added_by TEXT;
 
+-- Ensure all Nominee columns exist on already created tables
+ALTER TABLE nominees ADD COLUMN IF NOT EXISTS mobile TEXT;
+ALTER TABLE nominees ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE nominees ADD COLUMN IF NOT EXISTS nid_birth_reg TEXT;
+ALTER TABLE nominees ADD COLUMN IF NOT EXISTS relation TEXT;
+ALTER TABLE nominees ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE nominees ADD COLUMN IF NOT EXISTS percentage NUMERIC DEFAULT 100;
+ALTER TABLE nominees ADD COLUMN IF NOT EXISTS photo_url TEXT;
+
+-- Ensure members table also has nominee backup columns
+ALTER TABLE members ADD COLUMN IF NOT EXISTS nominee_name TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS nominee_relation TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS nominee_nid TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS nominee_mobile TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS nominee_phone TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS nominee_address TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS nominee_photo TEXT;
+
 -- ৯. ইউজার টেবিল
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
