@@ -613,6 +613,7 @@ export const DashboardView: React.FC = () => {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                    <th className="pb-3 font-semibold text-center w-12">ক্র. নং</th>
                     <th className="pb-3 font-semibold">{t('memberId')}</th>
                     <th className="pb-3 font-semibold">{t('memberName')}</th>
                     <th className="pb-3 font-semibold">{t('dueAmount')}</th>
@@ -621,8 +622,11 @@ export const DashboardView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 text-slate-600 font-medium">
-                  {monthlyDues.filter(d => d.dueAmount > 0).slice(0, 5).map(due => (
+                  {monthlyDues.filter(d => d.dueAmount > 0).slice(0, 5).map((due, index) => (
                     <tr key={due.id} className="hover:bg-slate-50/80 transition">
+                      <td className="py-3 font-mono font-bold text-slate-600 text-center">
+                        {toBnDigits(index + 1)}
+                      </td>
                       <td className="py-3 font-mono font-bold text-slate-700">
                         {due.memberId}
                       </td>

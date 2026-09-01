@@ -56,9 +56,9 @@ export const ReportsView: React.FC = () => {
       rows = [...recs, ...incs, ...exps];
     } else if (activeReportTab === 'dues') {
       filename = 'Baunia_Builders_Overdue_Report.csv';
-      headers = ['Member ID', 'Member Name', 'Month', 'Due Amount', 'Last Payment'];
-      rows = monthlyDues.filter(d => d.dueAmount > 0).map(d => [
-        d.memberId, `"${d.memberName}"`, d.month, d.dueAmount, d.lastPaymentDate
+      headers = ['SL', 'Member ID', 'Member Name', 'Month', 'Due Amount', 'Last Payment'];
+      rows = monthlyDues.filter(d => d.dueAmount > 0).map((d, idx) => [
+        idx + 1, d.memberId, `"${d.memberName}"`, d.month, d.dueAmount, d.lastPaymentDate
       ]);
     } else if (activeReportTab === 'shares') {
       filename = 'Baunia_Builders_Share_Report.csv';
@@ -337,6 +337,7 @@ export const ReportsView: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
                 <tr>
+                  <th className="p-2.5 w-12 text-center">ক্র. নং</th>
                   <th className="p-2.5">আইডি</th>
                   <th className="p-2.5">সদস্যের নাম</th>
                   <th className="p-2.5">মাস / বিবরণ</th>
@@ -345,8 +346,9 @@ export const ReportsView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {monthlyDues.filter(d => d.dueAmount > 0).map(d => (
+                {monthlyDues.filter(d => d.dueAmount > 0).map((d, index) => (
                   <tr key={d.id}>
+                    <td className="p-2.5 font-mono font-bold text-slate-600 text-center">{toBnDigits(index + 1)}</td>
                     <td className="p-2.5 font-mono font-bold">{d.memberId}</td>
                     <td className="p-2.5 font-bold text-slate-900">{d.memberName}</td>
                     <td className="p-2.5 font-medium">{d.month}</td>

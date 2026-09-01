@@ -77,11 +77,11 @@ export const DueManagement: React.FC = () => {
     if (!matchesSearch) return false;
 
     if (selectedMonthFilter === 'all') {
-      return item.hasDue;
+      return item.hasDue && item.totalDue > 0;
     } else {
       // Check if this member is due in the selected month
       const matchMonth = item.summary.statusList.find(s => s.schedule.id === selectedMonthFilter);
-      return matchMonth && (matchMonth.status === 'due' || matchMonth.status === 'partial');
+      return matchMonth && (matchMonth.status === 'due' || matchMonth.status === 'partial') && (matchMonth.dueAmount > 0);
     }
   });
 
@@ -309,6 +309,7 @@ export const DueManagement: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200">
               <tr>
+                <th className="py-3 px-3 w-14 text-center">ক্র. নং</th>
                 <th className="py-3 px-4">{t('memberId')}</th>
                 <th className="py-3 px-4">{t('memberName')}</th>
                 <th className="py-3 px-4 min-w-[280px]">১২ মাসের কিস্তি স্ট্যাটাস (Paid/Due Timeline)</th>
@@ -319,16 +320,20 @@ export const DueManagement: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredAnalysis.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
                     কোনো বকেয়া তথ্য নেই। সকল সদস্য নিয়মিত পরিশোধিত।
                   </td>
                 </tr>
               ) : (
-                filteredAnalysis.map(({ member, summary, unpaidMonths, totalDue }) => {
+                filteredAnalysis.map(({ member, summary, unpaidMonths, totalDue }, index) => {
                   const dueMonthNames = unpaidMonths.map(u => u.schedule.nameBn);
 
                   return (
                     <tr key={member.id} className="hover:bg-rose-50/25 transition group">
+                      <td className="py-3 px-3 font-mono font-bold text-slate-600 text-center align-top">
+                        {toBnDigits(index + 1)}
+                      </td>
+
                       <td className="py-3 px-4 font-mono font-bold text-slate-800 align-top">
                         {member.id}
                       </td>
