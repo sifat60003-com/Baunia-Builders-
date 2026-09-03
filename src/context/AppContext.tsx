@@ -2275,6 +2275,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           join_date: m.joinDate || new Date().toISOString().split('T')[0],
           status: m.status || 'active',
           share_qty: m.shareQty || 1,
+          photo_url: m.photoUrl && !m.photoUrl.startsWith('data:image') ? m.photoUrl : null,
+          photo_back_url: m.photoBackUrl && !m.photoBackUrl.startsWith('data:image') ? m.photoBackUrl : null,
           opening_balance: m.openingBalance || 0,
           current_due: m.currentDue !== undefined ? m.currentDue : ((m.shareQty || 1) * 25000),
           created_at: m.createdAt || new Date().toISOString(),
@@ -2299,7 +2301,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                   mobile: n.mobile || '',
                   address: n.address || '',
                   percentage: Number(n.percentage) || 0,
-                  photo_url: n.photoUrl || null,
+                  photo_url: n.photoUrl && !n.photoUrl.startsWith('data:image') ? n.photoUrl : null,
                   created_at: new Date().toISOString()
                 });
               });

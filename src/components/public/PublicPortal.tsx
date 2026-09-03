@@ -36,15 +36,17 @@ import {
 } from 'lucide-react';
 import { LoginView } from '../auth/LoginView';
 import { getMemberMonthlyStatusList, getCurrentRunningMonthId, getMemberDueMonthsWithFines } from '../../utils/monthlySchedule';
-import { compressImage } from '../../utils/imageCompressor';
+import { compressImage, uploadOptimizedPhoto, deletePhotoFromStorage } from '../../utils/imageCompressor';
+import { toBnDigits } from '../../utils/formatters';
 
 type PortalView = 'home' | 'member_search' | 'login';
 type VerifStep = 'nid_verify' | 'pin_set' | 'pin_login' | 'otp_verify';
 
 export const PublicPortal: React.FC = () => {
-  const { members, settings, receipts, updateMember, showToast, addNotification } = useApp();
+  const { members, settings, receipts, updateMember, showToast, addNotification, addAuditLog } = useApp();
   const [currentView, setCurrentView] = useState<PortalView>('home');
   const [hasAutoNotified, setHasAutoNotified] = useState(false);
+  const [hasLoginNotified, setHasLoginNotified] = useState<string | null>(null);
   const [showAllMonthsSchedule, setShowAllMonthsSchedule] = useState(false);
   
   const [searchPhone, setSearchPhone] = useState('');
@@ -63,6 +65,25 @@ export const PublicPortal: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const [verifError, setVerifError] = useState('');
+
+  // Real-time admin notification whenever ANY member logs into the member portal
+  React.useEffect(() => {
+    if (isVerified && searchedMember && hasLoginNotified !== searchedMember.id) {
+      setHasLoginNotified(searchedMember.id);
+      addNotification({
+        titleBn: `সদস্য পোর্টাল লগইন: ${searchedMember.nameBn}`,
+        titleEn: `Member Portal Login: ${searchedMember.nameEn || searchedMember.nameBn}`,
+        messageBn: `সদস্য ${searchedMember.nameBn} (আইডি: ${searchedMember.id}, মেম্বার নং: ${toBnDigits(searchedMember.memberNo)}, মোবাইল: ${searchedMember.mobile}) এইমাত্র সদস্য পোর্টালে সফলভাবে লগইন করেছেন।`,
+        messageEn: `Member ${searchedMember.nameEn || searchedMember.nameBn} (ID: ${searchedMember.id}, No: ${searchedMember.memberNo}, Phone: ${searchedMember.mobile}) has successfully logged into the member portal.`,
+        type: 'member',
+        isRead: false,
+        linkTab: 'members',
+      });
+      if (addAuditLog) {
+        addAuditLog('MEMBER_PORTAL_LOGIN', `সদস্য পোর্টালে লগইন: ${searchedMember.nameBn} (${searchedMember.id})`);
+      }
+    }
+  }, [isVerified, searchedMember, hasLoginNotified, addNotification, addAuditLog]);
 
   // Auto-notification on member login with dues between 1st and 15th
   React.useEffect(() => {
@@ -115,6 +136,7 @@ export const PublicPortal: React.FC = () => {
     setSearchedMember(found || null);
     setHasSearched(true);
     setIsVerified(false);
+    setHasLoginNotified(null);
     setInputPin('');
     setNewPin('');
     setConfirmPin('');
@@ -249,6 +271,7 @@ export const PublicPortal: React.FC = () => {
 
   const handleLockProfile = () => {
     setIsVerified(false);
+    setHasLoginNotified(null);
     setInputPin('');
     setInputNid('');
     setInputOtp('');
@@ -823,6 +846,8 @@ export const PublicPortal: React.FC = () => {
                               <img
                                 src={searchedMember.photoUrl}
                                 alt={searchedMember.nameBn}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-4 ring-white/20 shadow-lg shrink-0 bg-slate-800"
                               />
                             ) : (
@@ -851,13 +876,23 @@ export const PublicPortal: React.FC = () => {
                                       return;
                                     }
                                     try {
-                                      const compressed = await compressImage(file, 480, 480, 0.75);
-                                      updateMember(searchedMember.id, { photoUrl: compressed });
-                                      setSearchedMember((prev: any) => prev ? { ...prev, photoUrl: compressed } : prev);
+                                      if (searchedMember.photoUrl) {
+                                        await deletePhotoFromStorage(searchedMember.photoUrl);
+                                      }
+                                      const uploadedUrl = await uploadOptimizedPhoto(file, 'members');
+                                      updateMember(searchedMember.id, { photoUrl: uploadedUrl });
+                                      setSearchedMember((prev: any) => prev ? { ...prev, photoUrl: uploadedUrl } : prev);
                                       showToast('আপনার ছবি সফলভাবে আপডেট ও সংরক্ষিত হয়েছে!', 'success');
                                     } catch (err) {
                                       console.error('Photo upload error:', err);
-                                      showToast('ছবি প্রসেস করতে সমস্যা হয়েছে', 'error');
+                                      try {
+                                        const compressed = await compressImage(file, 600, 600, 0.75);
+                                        updateMember(searchedMember.id, { photoUrl: compressed });
+                                        setSearchedMember((prev: any) => prev ? { ...prev, photoUrl: compressed } : prev);
+                                        showToast('আপনার ছবি সংরক্ষিত হয়েছে!', 'success');
+                                      } catch {
+                                        showToast('ছবি প্রসেস করতে সমস্যা হয়েছে', 'error');
+                                      }
                                     }
                                   }
                                 }}

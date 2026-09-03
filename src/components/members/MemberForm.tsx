@@ -232,7 +232,7 @@ export const MemberForm: React.FC = () => {
 
     try {
       if (photoUrl) {
-        deletePhotoFromStorage(photoUrl);
+        await deletePhotoFromStorage(photoUrl);
       }
       const uploadedUrl = await uploadOptimizedPhoto(file, 'members');
       setPhotoUrl(uploadedUrl);
@@ -241,7 +241,7 @@ export const MemberForm: React.FC = () => {
       console.error('Failed to upload photo:', err);
       // Fallback
       try {
-        const compressed = await compressImage(file, 800, 800, 0.75);
+        const compressed = await compressImage(file, 700, 700, 0.75);
         setPhotoUrl(compressed);
         showToast('সদস্যের ছবি সফলভাবে আপলোড হয়েছে', 'success');
       } catch {
@@ -261,7 +261,7 @@ export const MemberForm: React.FC = () => {
 
     try {
       if (photoBackUrl) {
-        deletePhotoFromStorage(photoBackUrl);
+        await deletePhotoFromStorage(photoBackUrl);
       }
       const uploadedUrl = await uploadOptimizedPhoto(file, 'members');
       setPhotoBackUrl(uploadedUrl);
@@ -269,7 +269,7 @@ export const MemberForm: React.FC = () => {
     } catch (err) {
       console.error('Failed to upload photo back:', err);
       try {
-        const compressed = await compressImage(file, 800, 800, 0.75);
+        const compressed = await compressImage(file, 700, 700, 0.75);
         setPhotoBackUrl(compressed);
         showToast('NID/আইডি কার্ডের পিছনের অংশের ছবি আপলোড হয়েছে', 'success');
       } catch {
@@ -288,7 +288,7 @@ export const MemberForm: React.FC = () => {
     try {
       const existingPhoto = nominees[index]?.photoUrl;
       if (existingPhoto) {
-        deletePhotoFromStorage(existingPhoto);
+        await deletePhotoFromStorage(existingPhoto);
       }
       const uploadedUrl = await uploadOptimizedPhoto(file, 'nominees');
       handleUpdateNominee(index, 'photoUrl', uploadedUrl);

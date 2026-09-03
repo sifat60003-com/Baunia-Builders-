@@ -1,18 +1,25 @@
 /**
- * Image compression & storage utility
- * Resizes large photos to optimal dimensions (max 800x800), compresses to lightweight WebP/JPEG,
- * and handles safe Supabase Storage upload with automatic fallback to optimized WebP data URL.
+ * Supabase Photo Egress & Storage Optimization Utility
+ * 1. Resizes large photos browser-side to max 600-800px before uploading.
+ * 2. Compresses images to lightweight WebP (or optimized JPEG) with ~75% quality.
+ * 3. Never uploads large original photos directly to Supabase Storage.
+ * 4. Stores clean public URLs/paths in the database, avoiding heavy base64 strings.
+ * 5. Uses 1-year browser cache headers ('31536000') on Supabase Storage so repeat views do not consume egress.
  */
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
+export const PRIMARY_PHOTO_BUCKET = 'member-photos';
+export const FALLBACK_PHOTO_BUCKET = 'photos';
+
 /**
- * Compresses an image file or base64 string to a lightweight WebP/JPEG data URL.
+ * Compresses an image file or base64 string browser-side to a lightweight WebP/JPEG data URL.
+ * Constrains dimensions to maxWidth/maxHeight (e.g. 700x700px) and quality (0.75).
  */
 export async function compressImage(
-  fileOrBase64: File | string,
-  maxWidth = 800,
-  maxHeight = 800,
+  fileOrBase64: File | Blob | string,
+  maxWidth = 700,
+  maxHeight = 700,
   quality = 0.75
 ): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -29,7 +36,7 @@ export async function compressImage(
         let width = img.width;
         let height = img.height;
 
-        // Calculate proportional dimensions
+        // Calculate proportional dimensions capped at maxWidth/maxHeight
         if (width > height) {
           if (width > maxWidth) {
             height = Math.round((height * maxWidth) / width);
@@ -61,7 +68,7 @@ export async function compressImage(
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Try WebP first, fallback to JPEG
+        // Prefer modern WebP for optimal compression ratio; fallback to JPEG
         let dataUrl = '';
         try {
           dataUrl = canvas.toDataURL('image/webp', quality);
@@ -131,62 +138,98 @@ export function dataURLtoBlob(dataurl: string): Blob {
 }
 
 /**
- * Uploads an optimized photo (compressed WebP, max 800px).
- * Tries Supabase Storage bucket 'photos' if available;
- * If Supabase storage is unavailable, fails, or bucket doesn't exist, gracefully falls back to the compressed data URL.
+ * Uploads an optimized photo (compressed WebP, max 700px).
+ * Tries Supabase Storage bucket 'member-photos' first, with fallback to 'photos'.
+ * Sets 1-year browser cache ('31536000') so egress is strictly minimized.
  */
 export async function uploadOptimizedPhoto(
-  file: File,
-  folder: 'members' | 'nominees' | 'avatars' | 'general' = 'members'
+  fileOrBlobOrBase64: File | Blob | string,
+  folder: 'members' | 'nominees' | 'avatars' | 'general' = 'members',
+  customFileName?: string
 ): Promise<string> {
   // Step 1: Compress & resize in browser
-  const compressedDataUrl = await compressImage(file, 800, 800, 0.75);
+  const compressedDataUrl = await compressImage(fileOrBlobOrBase64, 700, 700, 0.75);
 
   // Step 2: Attempt Supabase Storage upload if configured
   if (isSupabaseConfigured()) {
-    try {
-      const blob = dataURLtoBlob(compressedDataUrl);
-      const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase();
-      const fileName = `${folder}/${Date.now()}_${cleanName}.webp`;
+    const bucketsToTry = [PRIMARY_PHOTO_BUCKET, FALLBACK_PHOTO_BUCKET];
+    const blob = dataURLtoBlob(compressedDataUrl);
 
-      const { data, error } = await supabase.storage
-        .from('photos')
-        .upload(fileName, blob, {
-          contentType: 'image/webp',
-          upsert: true,
-          cacheControl: '31536000', // 1 year browser cache
-        });
+    let cleanName = customFileName || (fileOrBlobOrBase64 instanceof File ? fileOrBlobOrBase64.name : `photo_${Date.now()}`);
+    cleanName = cleanName.replace(/\.[^/.]+$/, ''); // remove old extension
+    cleanName = cleanName.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+    const fileName = `${folder}/${Date.now()}_${cleanName}.webp`;
 
-      if (!error && data?.path) {
-        const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName);
-        if (urlData?.publicUrl) {
-          return urlData.publicUrl;
+    for (const bucket of bucketsToTry) {
+      try {
+        const { data, error } = await supabase.storage
+          .from(bucket)
+          .upload(fileName, blob, {
+            contentType: 'image/webp',
+            upsert: true,
+            cacheControl: '31536000', // 1 year browser cache for extreme egress reduction
+          });
+
+        if (!error && data?.path) {
+          const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
+          if (urlData?.publicUrl) {
+            return urlData.publicUrl;
+          }
+        } else if (error) {
+          console.warn(`Supabase storage upload error on bucket ${bucket}:`, error.message);
         }
+      } catch (err) {
+        console.warn(`Supabase storage error on bucket ${bucket}:`, err);
       }
-    } catch (err) {
-      console.warn('Supabase storage upload skipped/failed, using compressed data URL:', err);
     }
   }
 
-  // Graceful fallback to compressed WebP data URL
+  // Graceful fallback to compressed WebP data URL if storage is offline or unreachable
   return compressedDataUrl;
 }
 
 /**
- * Removes an old photo from Supabase Storage if it was hosted there.
+ * Removes an old photo from Supabase Storage if it was hosted in member-photos or photos.
  */
 export async function deletePhotoFromStorage(photoUrl?: string): Promise<void> {
-  if (!photoUrl || !photoUrl.includes('/storage/v1/object/public/photos/')) {
-    return;
+  if (!photoUrl) return;
+
+  const match = photoUrl.match(/\/storage\/v1\/object\/public\/(member-photos|photos)\/(.+)/);
+  if (match) {
+    const bucket = match[1];
+    const filePath = decodeURIComponent(match[2]);
+    try {
+      await supabase.storage.from(bucket).remove([filePath]);
+    } catch (err) {
+      console.warn(`Failed to delete old photo from ${bucket}:`, err);
+    }
+  }
+}
+
+/**
+ * Helper to migrate an existing base64 string to a lightweight Supabase storage WebP file.
+ */
+export async function migrateBase64ToStorageUrl(
+  base64String: string,
+  folder: 'members' | 'nominees',
+  memberId: string
+): Promise<string | null> {
+  if (!base64String || !base64String.startsWith('data:image')) {
+    return null;
   }
   try {
-    const parts = photoUrl.split('/public/photos/');
-    const filePath = parts[1];
-    if (filePath) {
-      await supabase.storage.from('photos').remove([decodeURIComponent(filePath)]);
+    const cleanId = memberId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const resultUrl = await uploadOptimizedPhoto(
+      base64String,
+      folder,
+      `${cleanId}_photo`
+    );
+    if (resultUrl && resultUrl.startsWith('http')) {
+      return resultUrl;
     }
   } catch (err) {
-    console.warn('Failed to delete old photo from Supabase storage:', err);
+    console.error(`Failed to migrate photo for ${memberId}:`, err);
   }
+  return null;
 }
 

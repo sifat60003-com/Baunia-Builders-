@@ -17,7 +17,12 @@ import {
   AlertCircle,
   FileSpreadsheet,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Key,
+  KeyRound,
+  EyeOff,
+  ShieldCheck,
+  RotateCcw
 } from 'lucide-react';
 import { formatCurrency, toBnDigits } from '../../utils/formatters';
 import { translations } from '../../utils/translations';
@@ -28,6 +33,9 @@ export const MemberList: React.FC = () => {
   const { 
     members, 
     deleteMember, 
+    updateMember,
+    showToast,
+    addAuditLog,
     setActiveTab, 
     setSelectedMemberId, 
     setSelectedCertMemberId,
@@ -39,13 +47,81 @@ export const MemberList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'due'>('all');
   const [shareFilter, setShareFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'id' | 'name' | 'shares' | 'deposit' | 'due'>('id');
+  const [pinFilter, setPinFilter] = useState<'all' | 'set' | 'unset'>('all');
+  const [sortBy, setSortBy] = useState<'id' | 'name' | 'shares' | 'deposit' | 'due' | 'pin'>('id');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(15);
 
   // Deletion modal state
   const [memberToDelete, setMemberToDelete] = useState<Member | null>(null);
+
+  // PIN management modal state
+  const [pinModalMember, setPinModalMember] = useState<Member | null>(null);
+  const [modalPinInput, setModalPinInput] = useState('');
+  const [showModalPin, setShowModalPin] = useState(false);
+  const [pinModalError, setPinModalError] = useState('');
+
+  // Helper to determine if a member's PIN is set
+  const isMemberPinSet = (m: Member): boolean => {
+    return Boolean(m.isPinSet || (m.pin && m.pin.trim().length >= 4));
+  };
+
+  // Pre-calculated stats for PIN status
+  const pinStats = useMemo(() => {
+    let set = 0;
+    let unset = 0;
+    members.forEach(m => {
+      if (isMemberPinSet(m)) {
+        set++;
+      } else {
+        unset++;
+      }
+    });
+    return { set, unset, total: members.length };
+  }, [members]);
+
+  // Open PIN Modal
+  const openPinModal = (member: Member) => {
+    setPinModalMember(member);
+    setModalPinInput(member.pin || '');
+    setShowModalPin(false);
+    setPinModalError('');
+  };
+
+  // Save PIN from modal
+  const handleSavePin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pinModalMember) return;
+    const clean = modalPinInput.trim();
+    if (clean.length !== 4 || !/^\d{4}$/.test(clean)) {
+      setPinModalError('পিন অবশ্যই ৪ ডিজিটের সংখ্যা হতে হবে (যেমন: 4010)');
+      return;
+    }
+    updateMember(pinModalMember.id, {
+      pin: clean,
+      isPinSet: true
+    });
+    if (addAuditLog) {
+      addAuditLog('MEMBER_PIN_UPDATE', `সদস্য পিন আপডেট: ${pinModalMember.nameBn} (${pinModalMember.id})`);
+    }
+    showToast(`সদস্য ${pinModalMember.nameBn}-এর ৪-ডিজিট পিন সফলভাবে সংরক্ষিত হয়েছে!`, 'success');
+    setPinModalMember(null);
+  };
+
+  // Reset PIN from modal
+  const handleResetPin = () => {
+    if (!pinModalMember) return;
+    updateMember(pinModalMember.id, {
+      pin: '',
+      isPinSet: false
+    });
+    if (addAuditLog) {
+      addAuditLog('MEMBER_PIN_RESET', `সদস্য পিন রিসেট: ${pinModalMember.nameBn} (${pinModalMember.id})`);
+    }
+    showToast(`সদস্য ${pinModalMember.nameBn}-এর পিন রিসেট করা হয়েছে! সদস্য ১ম বার লগইনে নতুন পিন সেট করতে পারবেন।`, 'info');
+    setPinModalMember(null);
+  };
 
   // Filter & Search Logic
   const filteredMembers = useMemo(() => {
@@ -75,7 +151,12 @@ export const MemberList: React.FC = () => {
         (shareFilter === '2' && m.shareQty === 2) ||
         (shareFilter === '3+' && m.shareQty >= 3);
 
-      return matchesSearch && matchesStatus && matchesShare;
+      const matchesPin =
+        pinFilter === 'all' ||
+        (pinFilter === 'set' && isMemberPinSet(m)) ||
+        (pinFilter === 'unset' && !isMemberPinSet(m));
+
+      return matchesSearch && matchesStatus && matchesShare && matchesPin;
     }).sort((a, b) => {
       let cmp = 0;
       if (sortBy === 'id') cmp = (a.memberNo || 0) - (b.memberNo || 0);
@@ -83,9 +164,10 @@ export const MemberList: React.FC = () => {
       else if (sortBy === 'shares') cmp = a.shareQty - b.shareQty;
       else if (sortBy === 'deposit') cmp = a.currentDeposit - b.currentDeposit;
       else if (sortBy === 'due') cmp = a.currentDue - b.currentDue;
+      else if (sortBy === 'pin') cmp = (isMemberPinSet(a) ? 1 : 0) - (isMemberPinSet(b) ? 1 : 0);
       return sortOrder === 'asc' ? cmp : -cmp;
     });
-  }, [members, searchTerm, statusFilter, shareFilter, sortBy, sortOrder]);
+  }, [members, searchTerm, statusFilter, shareFilter, pinFilter, sortBy, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredMembers.length / itemsPerPage) || 1;
@@ -93,7 +175,7 @@ export const MemberList: React.FC = () => {
 
   // Export to CSV
   const handleExportCSV = () => {
-    const headers = ['সদস্য নং', 'আইডি', 'অংশীদার / সদস্য নাম', 'মোবাইল', 'শেয়ার সংখ্যা', 'নমীনির নাম', 'নমীনির NID/জন্ম নিবন্ধন', 'জমা', 'বকেয়া', 'অবস্থা'];
+    const headers = ['সদস্য নং', 'আইডি', 'অংশীদার / সদস্য নাম', 'মোবাইল', 'শেয়ার সংখ্যা', 'নমীনির নাম', 'নমীনির NID/জন্ম নিবন্ধন', 'জমা', 'বকেয়া', 'পোর্টাল পিন স্ট্যাটাস', 'অবস্থা'];
     const rows = filteredMembers.map(m => [
       m.memberNo,
       m.id,
@@ -104,6 +186,7 @@ export const MemberList: React.FC = () => {
       `"${m.nominees?.[0]?.nidBirthReg || ''}"`,
       m.currentDeposit,
       m.currentDue,
+      isMemberPinSet(m) ? 'পিন সেট করা' : 'পিন সেট নেই',
       m.status,
     ]);
 
@@ -181,7 +264,7 @@ export const MemberList: React.FC = () => {
 
       {/* Filter & Search Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           
           {/* Search Input */}
           <div className="relative">
@@ -213,6 +296,23 @@ export const MemberList: React.FC = () => {
               <option value="active">{language === 'bn' ? 'সক্রিয় সদস্য (Active)' : 'Active Members'}</option>
               <option value="inactive">{language === 'bn' ? 'নিষ্ক্রিয় সদস্য (Inactive)' : 'Inactive'}</option>
               <option value="due">{language === 'bn' ? 'বকেয়া রয়েছে এমন (Has Due)' : 'Has Due'}</option>
+            </select>
+          </div>
+
+          {/* PIN Filter Dropdown */}
+          <div className="flex items-center gap-2">
+            <Key className="w-4 h-4 text-slate-400 shrink-0" />
+            <select
+              value={pinFilter}
+              onChange={(e) => {
+                setPinFilter(e.target.value as any);
+                setCurrentPage(1);
+              }}
+              className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-hidden font-medium"
+            >
+              <option value="all">{language === 'bn' ? 'সকল পিন অবস্থা' : 'All PIN Status'}</option>
+              <option value="set">{language === 'bn' ? `পিন সেট করা (${toBnDigits(pinStats.set)})` : `PIN Set (${pinStats.set})`}</option>
+              <option value="unset">{language === 'bn' ? `পিন সেট নেই (${toBnDigits(pinStats.unset)})` : `PIN Not Set (${pinStats.unset})`}</option>
             </select>
           </div>
 
@@ -249,9 +349,78 @@ export const MemberList: React.FC = () => {
               <option value="shares-desc">{language === 'bn' ? 'সর্বোচ্চ শেয়ার' : 'Sort: Most Shares'}</option>
               <option value="deposit-desc">{language === 'bn' ? 'সর্বোচ্চ জমা' : 'Sort: Highest Deposit'}</option>
               <option value="due-desc">{language === 'bn' ? 'সর্বোচ্চ বকেয়া' : 'Sort: Highest Due'}</option>
+              <option value="pin-desc">{language === 'bn' ? 'পিন সেট করা আগে' : 'Sort: PIN Set First'}</option>
+              <option value="pin-asc">{language === 'bn' ? 'পিন সেট নেই আগে' : 'Sort: PIN Not Set First'}</option>
             </select>
           </div>
 
+        </div>
+
+        {/* Quick PIN Status Filter Pills */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5 mr-1">
+              <Key className="w-3.5 h-3.5 text-blue-600" />
+              {language === 'bn' ? 'পিন স্ট্যাটাস অনুযায়ী ফিল্টার:' : 'Filter by PIN:'}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => { setPinFilter('all'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                pinFilter === 'all'
+                  ? 'bg-slate-900 text-white shadow-xs ring-2 ring-slate-900/20'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              <span>{language === 'bn' ? 'সকল সদস্য' : 'All Members'}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${pinFilter === 'all' ? 'bg-slate-800 text-slate-200' : 'bg-white text-slate-700 border border-slate-200'}`}>
+                {language === 'bn' ? toBnDigits(pinStats.total) : pinStats.total}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setPinFilter('set'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                pinFilter === 'set'
+                  ? 'bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-600/20'
+                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'পিন সেট করা আছে' : 'PIN Set'}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${pinFilter === 'set' ? 'bg-emerald-700 text-emerald-100' : 'bg-white text-emerald-800 border border-emerald-300'}`}>
+                {language === 'bn' ? toBnDigits(pinStats.set) : pinStats.set}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setPinFilter('unset'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                pinFilter === 'unset'
+                  ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-600/20'
+                  : 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100'
+              }`}
+            >
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'পিন সেট করা নেই' : 'PIN Not Set'}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${pinFilter === 'unset' ? 'bg-amber-700 text-amber-100' : 'bg-white text-amber-900 border border-amber-300'}`}>
+                {language === 'bn' ? toBnDigits(pinStats.unset) : pinStats.unset}
+              </span>
+            </button>
+          </div>
+
+          {pinFilter !== 'all' && (
+            <button
+              type="button"
+              onClick={() => { setPinFilter('all'); setCurrentPage(1); }}
+              className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-semibold cursor-pointer"
+            >
+              {language === 'bn' ? 'ফিল্টার ক্লিয়ার করুন' : 'Clear Filter'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -276,6 +445,7 @@ export const MemberList: React.FC = () => {
                 <th className="py-3 px-3 text-center">{t('shares')}</th>
                 <th className="py-3 px-4">{language === 'bn' ? 'নমীনির নাম ও এনআইডি' : 'Nominee & NID'}</th>
                 <th className="py-3 px-3">{t('deposit')}</th>
+                <th className="py-3 px-3 text-center">{language === 'bn' ? 'পোর্টাল পিন' : 'Portal PIN'}</th>
                 <th className="py-3 px-3">{t('status')}</th>
                 <th className="py-3 px-4 text-right no-print">{t('actions')}</th>
               </tr>
@@ -283,7 +453,7 @@ export const MemberList: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {paginatedMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={10} className="py-12 text-center text-slate-400 font-medium">
                     {language === 'bn' ? 'কোনো সদস্য পাওয়া যায়নি' : 'No members found matching criteria'}
                   </td>
                 </tr>
@@ -313,23 +483,40 @@ export const MemberList: React.FC = () => {
                       </button>
                     </td>
 
-                    {/* Member Name */}
-                    <td className="py-3 px-4">
+                    {/* Member Name with Optimized Thumbnail */}
+                    <td className="py-2.5 px-4">
                       <div 
                         onClick={() => {
                           setSelectedMemberId(member.id);
                           setActiveTab('member_profile');
                         }}
-                        className="font-bold text-slate-900 group-hover:text-blue-700 cursor-pointer text-sm flex items-center gap-1.5"
+                        className="flex items-center gap-2.5 cursor-pointer group/name"
                         title="সদস্যের পূর্ণাঙ্গ প্রোফাইল দেখুন"
                       >
-                        <span>{member.nameBn}</span>
-                      </div>
-                      {member.nameEn && member.nameEn !== `Member ${member.memberNo}` && (
-                        <div className="text-[11px] text-slate-400">
-                          {member.nameEn}
+                        {member.photoUrl ? (
+                          <img
+                            src={member.photoUrl}
+                            alt={member.nameBn}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0 bg-slate-100 shadow-xs ring-1 ring-slate-100 group-hover/name:ring-blue-400 transition"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0 border border-blue-200">
+                            {member.nameBn ? member.nameBn.charAt(0) : 'স'}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-bold text-slate-900 group-hover/name:text-blue-700 transition text-xs sm:text-sm">
+                            {member.nameBn}
+                          </div>
+                          {member.nameEn && member.nameEn !== `Member ${member.memberNo}` && (
+                            <div className="text-[11px] text-slate-400">
+                              {member.nameEn}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </td>
 
                     {/* Mobile */}
@@ -368,6 +555,31 @@ export const MemberList: React.FC = () => {
                     {/* Total Deposit */}
                     <td className="py-3 px-3 font-bold text-emerald-700 whitespace-nowrap">
                       {formatCurrency(member.currentDeposit, language === 'bn')}
+                    </td>
+
+                    {/* Portal PIN Status Column */}
+                    <td className="py-3 px-3 text-center whitespace-nowrap">
+                      {isMemberPinSet(member) ? (
+                        <button
+                          type="button"
+                          onClick={() => openPinModal(member)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 transition cursor-pointer shadow-2xs"
+                          title="পিন পরিবর্তন বা রিসেট করতে ক্লিক করুন"
+                        >
+                          <Key className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <span>{language === 'bn' ? 'সেট করা' : 'Set'}</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openPinModal(member)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition cursor-pointer shadow-2xs"
+                          title="পিন সেট করতে ক্লিক করুন"
+                        >
+                          <KeyRound className="w-3 h-3 text-amber-600 shrink-0" />
+                          <span>{language === 'bn' ? 'সেট নেই' : 'Not Set'}</span>
+                        </button>
+                      )}
                     </td>
 
                     {/* Status Badge */}
@@ -425,6 +637,21 @@ export const MemberList: React.FC = () => {
                         >
                           <Award className="w-4 h-4" />
                         </button>
+
+                        {/* Manage PIN (Admin) */}
+                        {currentUser.role !== 'collector' && (
+                          <button
+                            onClick={() => openPinModal(member)}
+                            className={`p-1.5 rounded-lg transition cursor-pointer ${
+                              isMemberPinSet(member)
+                                ? 'text-emerald-700 hover:bg-emerald-50'
+                                : 'text-amber-700 hover:bg-amber-50'
+                            }`}
+                            title={language === 'bn' ? 'পোর্টাল পিন সেট / পরিবর্তন' : 'Manage Portal PIN'}
+                          >
+                            <Key className="w-4 h-4" />
+                          </button>
+                        )}
 
                         {/* Edit Member (Admin/Super Admin only) */}
                         {currentUser.role !== 'collector' && (
@@ -552,6 +779,146 @@ export const MemberList: React.FC = () => {
         title={`সদস্য (${memberToDelete?.nameBn}) মুছে ফেলা নিশ্চিত করুন`}
         description="আপনি কি নিশ্চিতভাবে এই সদস্য এবং তার সংশ্লিষ্ট প্রাথমিক প্রোফাইল মুছে ফেলতে চান? এই অ্যাকশনটি অপরিবর্তনীয়।"
       />
+
+      {/* Admin PIN Management Modal */}
+      {pinModalMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    {language === 'bn' ? 'পোর্টাল পিন পরিচালনা' : 'Portal PIN Management'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {pinModalMember.nameBn} ({pinModalMember.id})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPinModalMember(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 text-lg leading-none cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePin} className="mt-4 space-y-4">
+              {/* Member Info Card */}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-xs space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">সদস্য নং:</span>
+                  <span className="font-bold text-slate-800">{toBnDigits(pinModalMember.memberNo)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">মোবাইল নম্বর:</span>
+                  <span className="font-mono font-bold text-slate-800">{pinModalMember.mobile}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-slate-200">
+                  <span className="text-slate-500">বর্তমান অবস্থা:</span>
+                  {isMemberPinSet(pinModalMember) ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      পিন সেট করা আছে
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                      <AlertCircle className="w-3 h-3 text-amber-600" />
+                      পিন এখনও সেট করা নেই
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* PIN Input */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">
+                  {language === 'bn' ? '৪ ডিজিটের সিকিউরিটি পিন (PIN)' : '4-Digit Security PIN'}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showModalPin ? 'text' : 'password'}
+                    maxLength={4}
+                    value={modalPinInput}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                      setModalPinInput(val);
+                      setPinModalError('');
+                    }}
+                    placeholder="যেমন: 4010"
+                    className="w-full text-center tracking-widest text-lg font-mono font-bold py-2.5 px-4 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowModalPin(!showModalPin)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                    title={showModalPin ? 'পিন লুকান' : 'পিন দেখুন'}
+                  >
+                    {showModalPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {pinModalError && (
+                  <p className="text-[11px] text-rose-600 font-semibold">{pinModalError}</p>
+                )}
+              </div>
+
+              {/* Quick Preset: Mobile Last 4 digits */}
+              {pinModalMember.mobile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cleanMobile = pinModalMember.mobile.replace(/\D/g, '');
+                    if (cleanMobile.length >= 4) {
+                      setModalPinInput(cleanMobile.slice(-4));
+                      setPinModalError('');
+                    }
+                  }}
+                  className="w-full py-1.5 px-2.5 text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition font-medium text-center cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>মোবাইলের শেষ ৪ ডিজিট ({pinModalMember.mobile.replace(/\D/g, '').slice(-4)}) পিন হিসেবে দিন</span>
+                </button>
+              )}
+
+              {/* Modal Buttons */}
+              <div className="pt-2 flex items-center justify-between gap-2">
+                {isMemberPinSet(pinModalMember) ? (
+                  <button
+                    type="button"
+                    onClick={handleResetPin}
+                    className="py-2 px-3 text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition cursor-pointer flex items-center gap-1"
+                    title="পিন মুছে দিন যাতে সদস্য নিজে আবার সেট করতে পারে"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>পিন রিসেট</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPinModalMember(null)}
+                    className="py-2 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                  >
+                    {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                  </button>
+                  <button
+                    type="submit"
+                    className="py-2 px-4 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>{language === 'bn' ? 'পিন সংরক্ষণ করুন' : 'Save PIN'}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

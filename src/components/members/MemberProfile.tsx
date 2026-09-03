@@ -25,9 +25,13 @@ import {
   X,
   Plus,
   KeyRound,
+  Key,
+  EyeOff,
+  RotateCcw,
   Sparkles,
   Check,
-  ShieldAlert
+  ShieldAlert,
+  Trash2
 } from 'lucide-react';
 import { formatCurrency, formatDate, toBnDigits } from '../../utils/formatters';
 import { translations } from '../../utils/translations';
@@ -76,6 +80,47 @@ export const MemberProfile: React.FC = () => {
 
   const member = members.find(m => m.id === selectedMemberId) || members[0];
 
+  // PIN Management Modal States
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [profilePinInput, setProfilePinInput] = useState('');
+  const [showProfilePin, setShowProfilePin] = useState(false);
+  const [profilePinError, setProfilePinError] = useState('');
+
+  const isMemberPinSet = Boolean(member?.isPinSet || (member?.pin && member?.pin.trim().length >= 4));
+
+  const openPinModal = () => {
+    setProfilePinInput(member?.pin || '');
+    setShowProfilePin(false);
+    setProfilePinError('');
+    setIsPinModalOpen(true);
+  };
+
+  const handleSavePin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!member) return;
+    const clean = profilePinInput.trim();
+    if (clean.length !== 4 || !/^\d{4}$/.test(clean)) {
+      setProfilePinError('পিন অবশ্যই ৪ ডিজিটের সংখ্যা হতে হবে (যেমন: 4010)');
+      return;
+    }
+    updateMember(member.id, {
+      pin: clean,
+      isPinSet: true
+    });
+    showToast(`সদস্য ${member.nameBn}-এর ৪-ডিজিট পিন সফলভাবে সংরক্ষিত হয়েছে!`, 'success');
+    setIsPinModalOpen(false);
+  };
+
+  const handleResetPin = () => {
+    if (!member) return;
+    updateMember(member.id, {
+      pin: '',
+      isPinSet: false
+    });
+    showToast(`সদস্য ${member.nameBn}-এর পিন রিসেট করা হয়েছে! সদস্য ১ম বার লগইনে নতুন পিন দিতে পারবেন।`, 'info');
+    setIsPinModalOpen(false);
+  };
+
 
 
   // Direct Photo Upload Handler
@@ -90,7 +135,7 @@ export const MemberProfile: React.FC = () => {
 
     try {
       if (member.photoUrl) {
-        deletePhotoFromStorage(member.photoUrl);
+        await deletePhotoFromStorage(member.photoUrl);
       }
       const uploadedUrl = await uploadOptimizedPhoto(file, 'members');
       updateMember(member.id, { photoUrl: uploadedUrl });
@@ -98,12 +143,28 @@ export const MemberProfile: React.FC = () => {
     } catch (err) {
       console.error('Failed to upload photo:', err);
       try {
-        const compressed = await compressImage(file, 800, 800, 0.75);
+        const compressed = await compressImage(file, 700, 700, 0.75);
         updateMember(member.id, { photoUrl: compressed });
         showToast('সদস্যের ছবি সফলভাবে আপলোড ও সংরক্ষিত হয়েছে!', 'success');
       } catch {
         showToast('ছবি আপলোড করতে ব্যর্থ হয়েছে', 'error');
       }
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!member) return;
+    if (!window.confirm(`আপনি কি সদস্য ${member.nameBn}-এর ছবি মুছে ফেলতে চান?`)) return;
+    try {
+      if (member.photoUrl) {
+        await deletePhotoFromStorage(member.photoUrl);
+      }
+      updateMember(member.id, { photoUrl: '' });
+      showToast('সদস্যের ছবি সফলভাবে মুছে ফেলা হয়েছে!', 'info');
+    } catch (err) {
+      console.error('Failed to remove photo:', err);
+      updateMember(member.id, { photoUrl: '' });
+      showToast('সদস্যের ছবি মুছে ফেলা হয়েছে!', 'info');
     }
   };
 
@@ -244,17 +305,30 @@ export const MemberProfile: React.FC = () => {
               </div>
             )}
             
-            {/* Direct Photo Change Overlay for Super Admin / Admin */}
+            {/* Direct Photo Actions Overlay for Super Admin / Admin */}
             {currentUser.role !== 'collector' && (
-              <button
-                type="button"
-                onClick={() => photoInputRef.current?.click()}
-                className="absolute inset-0 bg-slate-950/75 backdrop-blur-xs rounded-2xl opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-1 text-white font-bold text-[11px] cursor-pointer"
-                title="সদস্যের ছবি আপলোড / পরিবর্তন করুন"
-              >
-                <Camera className="w-6 h-6 text-amber-300 animate-pulse" />
-                <span>ছবি পরিবর্তন</span>
-              </button>
+              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs rounded-2xl opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-1.5 p-1 z-20">
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  className="w-full py-1 px-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-[10px] flex items-center justify-center gap-1 cursor-pointer transition shadow-xs"
+                  title="সদস্যের ছবি আপলোড বা পরিবর্তন করুন"
+                >
+                  <Camera className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{member.photoUrl ? 'পরিবর্তন' : 'ছবি দিন'}</span>
+                </button>
+                {member.photoUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="w-full py-1 px-1.5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] flex items-center justify-center gap-1 cursor-pointer transition shadow-xs"
+                    title="সদস্যের ছবি মুছে ফেলুন"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-200" />
+                    <span>মুছুন</span>
+                  </button>
+                )}
+              </div>
             )}
 
             <span className={`absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase shadow-sm ${
@@ -277,7 +351,7 @@ export const MemberProfile: React.FC = () => {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-xs text-blue-100">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-xs text-blue-100">
               <span className="flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-blue-300" />
                 {member.mobile}
@@ -290,6 +364,24 @@ export const MemberProfile: React.FC = () => {
                 <Calendar className="w-3.5 h-3.5 text-blue-300" />
                 যোগদান: {formatDate(member.joinDate, language === 'bn')}
               </span>
+              {/* Portal PIN Status Button */}
+              <button
+                type="button"
+                onClick={openPinModal}
+                className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold transition shadow-xs cursor-pointer ${
+                  isMemberPinSet
+                    ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/50 hover:bg-emerald-500/40'
+                    : 'bg-amber-500/30 text-amber-200 border border-amber-400/50 hover:bg-amber-500/40'
+                }`}
+                title="পোর্টাল পিন পরিবর্তন বা রিসেট করতে ক্লিক করুন"
+              >
+                <Key className="w-3 h-3" />
+                <span>
+                  {isMemberPinSet
+                    ? (language === 'bn' ? 'পোর্টাল পিন: সেট করা আছে' : 'Portal PIN: Set')
+                    : (language === 'bn' ? 'পোর্টাল পিন: সেট নেই' : 'Portal PIN: Not Set')}
+                </span>
+              </button>
             </div>
 
             <p className="text-xs text-blue-200 max-w-xl">
@@ -924,6 +1016,8 @@ export const MemberProfile: React.FC = () => {
                               <img
                                 src={nominee.photoUrl}
                                 alt={nominee.name}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-12 h-12 rounded-full object-cover border border-slate-200 shadow-xs"
                               />
                             ) : (
@@ -948,7 +1042,7 @@ export const MemberProfile: React.FC = () => {
                                   try {
                                     const oldPhoto = nominee.photoUrl;
                                     if (oldPhoto) {
-                                      deletePhotoFromStorage(oldPhoto);
+                                      await deletePhotoFromStorage(oldPhoto);
                                     }
                                     const uploadedUrl = await uploadOptimizedPhoto(file, 'nominees');
                                     let updated = [...(member.nominees || [])];
@@ -1416,7 +1510,145 @@ export const MemberProfile: React.FC = () => {
         </div>
       )}
 
-      {/* Super Admin Quick Edit & Photo Update Modal (REMOVED) */}
+      {/* Admin PIN Management Modal */}
+      {isPinModalOpen && member && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    {language === 'bn' ? 'সদস্য পোর্টাল পিন পরিচালনা' : 'Member Portal PIN Management'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {member.nameBn} ({member.id})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPinModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 text-lg leading-none cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePin} className="mt-4 space-y-4">
+              {/* Info summary */}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-xs space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">সদস্য নম্বর:</span>
+                  <span className="font-bold text-slate-800">{toBnDigits(member.memberNo)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">মোবাইল নম্বর:</span>
+                  <span className="font-mono font-bold text-slate-800">{member.mobile}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-slate-200">
+                  <span className="text-slate-500">বর্তমান অবস্থা:</span>
+                  {isMemberPinSet ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      পিন সেট করা আছে
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                      <AlertCircle className="w-3 h-3 text-amber-600" />
+                      পিন এখনও সেট করা নেই
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* PIN input */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">
+                  {language === 'bn' ? '৪ ডিজিটের সিকিউরিটি পিন (PIN)' : '4-Digit Security PIN'}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showProfilePin ? 'text' : 'password'}
+                    maxLength={4}
+                    value={profilePinInput}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                      setProfilePinInput(val);
+                      setProfilePinError('');
+                    }}
+                    placeholder="যেমন: 4010"
+                    className="w-full text-center tracking-widest text-lg font-mono font-bold py-2.5 px-4 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowProfilePin(!showProfilePin)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                    title={showProfilePin ? 'পিন লুকান' : 'পিন দেখুন'}
+                  >
+                    {showProfilePin ? <EyeOff className="w-4 h-4" /> : <Key className="w-4 h-4" />}
+                  </button>
+                </div>
+                {profilePinError && (
+                  <p className="text-[11px] text-rose-600 font-semibold">{profilePinError}</p>
+                )}
+              </div>
+
+              {/* Quick Preset */}
+              {member.mobile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cleanMobile = member.mobile.replace(/\D/g, '');
+                    if (cleanMobile.length >= 4) {
+                      setProfilePinInput(cleanMobile.slice(-4));
+                      setProfilePinError('');
+                    }
+                  }}
+                  className="w-full py-1.5 px-2.5 text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition font-medium text-center cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>মোবাইলের শেষ ৪ ডিজিট ({member.mobile.replace(/\D/g, '').slice(-4)}) পিন হিসেবে দিন</span>
+                </button>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex items-center justify-between gap-2">
+                {isMemberPinSet ? (
+                  <button
+                    type="button"
+                    onClick={handleResetPin}
+                    className="py-2 px-3 text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition cursor-pointer flex items-center gap-1"
+                    title="পিন মুছে দিন যাতে সদস্য নিজে আবার সেট করতে পারে"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>পিন রিসেট</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPinModalOpen(false)}
+                    className="py-2 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                  >
+                    {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                  </button>
+                  <button
+                    type="submit"
+                    className="py-2 px-4 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>{language === 'bn' ? 'পিন সংরক্ষণ করুন' : 'Save PIN'}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

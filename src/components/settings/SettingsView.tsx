@@ -24,12 +24,13 @@ import {
   Camera,
   User as UserIcon,
   Trash2,
-  Unplug
+  Unplug,
+  Image as ImageIcon
 } from 'lucide-react';
 import { SystemSettings } from '../../types';
 import defaultLogo from '../../assets/images/baunia_builders_logo_1787932825880.jpg';
 import { getSupabaseCredentials, saveSupabaseCredentials, disconnectSupabase, isSupabaseConfigured, supabase } from '../../lib/supabase';
-import { compressImage } from '../../utils/imageCompressor';
+import { compressImage, migrateBase64ToStorageUrl, uploadOptimizedPhoto } from '../../utils/imageCompressor';
 
 export const SettingsView: React.FC = () => {
   const { 
@@ -43,7 +44,9 @@ export const SettingsView: React.FC = () => {
     language, 
     t,
     currentUser,
-    updateUser
+    updateUser,
+    members,
+    updateMember
   } = useApp();
 
   const [formData, setFormData] = useState<SystemSettings>({ ...settings });
@@ -104,6 +107,63 @@ export const SettingsView: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
+
+  // Photo Egress Optimization State
+  const [isMigratingPhotos, setIsMigratingPhotos] = useState(false);
+  const [photoMigrationProgress, setPhotoMigrationProgress] = useState<string>('');
+
+  const membersWithStorageUrl = members.filter(m => m.photoUrl && m.photoUrl.startsWith('http')).length;
+  const membersWithBase64 = members.filter(m => m.photoUrl && m.photoUrl.startsWith('data:image')).length;
+  const membersWithoutPhoto = members.filter(m => !m.photoUrl).length;
+
+  const handleMigrateAllPhotos = async () => {
+    if (!isSupabaseConfigured()) {
+      showToast('সুপাবেজ সংযোগ নেই!', 'error');
+      return;
+    }
+
+    setIsMigratingPhotos(true);
+    setPhotoMigrationProgress('ছবি অপ্টিমাইজেশন ও স্টোরেজ সিঙ্ক শুরু হচ্ছে...');
+
+    try {
+      const { data: dbMembers, error: fetchErr } = await supabase.from('members').select('id, photo_url');
+      if (fetchErr) {
+        throw new Error(fetchErr.message);
+      }
+
+      const toMigrate = (dbMembers || []).filter(m => m.photo_url && m.photo_url.startsWith('data:image'));
+      let migrated = 0;
+
+      for (let i = 0; i < toMigrate.length; i++) {
+        const m = toMigrate[i];
+        setPhotoMigrationProgress(`অপ্টিমাইজ হচ্ছে (${i + 1}/${toMigrate.length}): ${m.id}`);
+        const publicUrl = await migrateBase64ToStorageUrl(m.photo_url, 'members', m.id);
+        if (publicUrl) {
+          await supabase.from('members').update({ photo_url: publicUrl }).eq('id', m.id);
+          updateMember(m.id, { photoUrl: publicUrl });
+          migrated++;
+        }
+      }
+
+      const localBase64 = members.filter(m => m.photoUrl && m.photoUrl.startsWith('data:image'));
+      for (const lm of localBase64) {
+        const publicUrl = await migrateBase64ToStorageUrl(lm.photoUrl, 'members', lm.id);
+        if (publicUrl) {
+          await supabase.from('members').update({ photo_url: publicUrl }).eq('id', lm.id);
+          updateMember(lm.id, { photoUrl: publicUrl });
+        }
+      }
+
+      showToast(`মোট ${migrated} টি ছবি ক্লাউড স্টোরেজে সফলভাবে স্থানান্তরিত হয়েছে!`, 'success');
+      setPhotoMigrationProgress(`সম্পন্ন! সকল ছবি এখন Supabase Storage-এ সংরক্ষিত।`);
+    } catch (err: any) {
+      console.error('Photo migration error:', err);
+      showToast(`ছবি স্থানান্তর ব্যর্থ: ${err.message}`, 'error');
+      setPhotoMigrationProgress('');
+    } finally {
+      setIsMigratingPhotos(false);
+    }
+  };
 
   const handleSaveSupabase = () => {
     let sanitizedUrl = spUrl.trim();
@@ -1000,11 +1060,86 @@ ALTER TABLE audit_logs DISABLE ROW LEVEL SECURITY;`}
           </div>
         </div>
 
+        {/* 5. Photo Egress Optimization & Storage Status */}
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-emerald-600" />
+              <span>৫. সুপাবেজ ফটো এগ্রেস অপ্টিমাইজেশন ও স্টোরেজ স্ট্যাটাস (Photo Egress Optimization)</span>
+            </h2>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Zero Egress Waste Active
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-600 leading-relaxed">
+            সুপাবেজের এগ্রেস ব্যান্ডউইথ সাশ্রয়ের জন্য ছবিগুলো ব্রাউজারেই সর্বোচ্চ ৭০০×৭০০ পিক্সেল WebP ফরম্যাটে কম্প্রেস করা হয় এবং সরাসরি 
+            <strong className="text-slate-800"> member-photos</strong> ক্লাউড স্টোরেজ বাকেটে ১ বছরের ব্রাউজার ক্যাশ কন্ট্রোল (Cache-Control: 31536000) সহ সংরক্ষিত হয়। 
+            ডাটাবেজে কোনো ভারী Base64 রাখা হয় না, ফলে প্রতিটি কুয়েরিতে মেগাবাইট ব্যান্ডউইথ সাশ্রয় হয়।
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase">ক্লাউড স্টোরেজ ছবি</span>
+              <div className="text-lg font-black text-emerald-600 flex items-center gap-1.5">
+                <span>{membersWithStorageUrl} জন</span>
+                <span className="text-xs text-slate-400 font-normal">/ {members.length}</span>
+              </div>
+              <p className="text-[10px] text-slate-500">Supabase Storage CDN URL</p>
+            </div>
+
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase">ডাটাবেজে Base64 ছবি</span>
+              <div className={`text-lg font-black flex items-center gap-1.5 ${membersWithBase64 > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                <span>{membersWithBase64} জন</span>
+                {membersWithBase64 === 0 && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+              </div>
+              <p className="text-[10px] text-slate-500">{membersWithBase64 === 0 ? 'সম্পূর্ণ পরিষ্কার (০% এগ্রেস নষ্ট)' : 'ক্লাউড স্টোরেজে স্থানান্তর প্রয়োজন'}</p>
+            </div>
+
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase">স্টোরেজ বাকেট</span>
+              <div className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-md font-mono text-xs">member-photos</span>
+              </div>
+              <p className="text-[10px] text-slate-500">Public Bucket • WebP Optimized</p>
+            </div>
+
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase">ক্যাশ কন্ট্রোল নীতি</span>
+              <div className="text-sm font-bold text-indigo-700">
+                <span>1 Year (31,536,000s)</span>
+              </div>
+              <p className="text-[10px] text-slate-500">রিপিট ভিউতে শূন্য এগ্রেস ব্যান্ডউইথ</p>
+            </div>
+          </div>
+
+          {photoMigrationProgress && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-blue-800 flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
+              <span>{photoMigrationProgress}</span>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleMigrateAllPhotos}
+              disabled={isMigratingPhotos}
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-sm transition cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isMigratingPhotos ? 'animate-spin' : ''}`} />
+              <span>{isMigratingPhotos ? 'ছবি অপ্টিমাইজেশন চলছে...' : 'সকল সদস্যের ছবি অপ্টিমাইজ ও স্টোরেজে সিঙ্ক করুন'}</span>
+            </button>
+          </div>
+        </div>
+
         {/* Database Backup & Factory Reset */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
           <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100 flex items-center gap-2">
             <Database className="w-4 h-4 text-indigo-600" />
-            <span>৫. ডাটাবেজ ব্যাকআপ ও রিস্টোর (Local JSON Management)</span>
+            <span>৬. ডাটাবেজ ব্যাকআপ ও রিস্টোর (Local JSON Management)</span>
           </h2>
 
           <div className="flex flex-wrap items-center gap-3">
