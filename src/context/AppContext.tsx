@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import { 
   User, 
   Member, 
@@ -48,6 +48,8 @@ export interface ToastMessage {
 interface AppContextType {
   // Auth state
   isSupabaseLoading: boolean;
+  isRealtimeConnected: boolean;
+  manualSyncFromSupabase: () => Promise<void>;
   isAuthenticated: boolean;
   setIsAuthenticated: (auth: boolean) => void;
   // Localization & Role
@@ -1076,17 +1078,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     fetchFromSupabase();
   }, []);
 
-  // Supabase Realtime Subscription for automatic multi-panel synchronization (Super Admin <-> Accountant)
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
+  // Optimized Zero-Egress Supabase Realtime Synchronization
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const pendingRefreshTables = useRef<Set<string>>(new Set());
+  const debounceRefreshTimer = useRef<NodeJS.Timeout | null>(null);
 
-    const channel = supabase
-      .channel('app-realtime-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'receipts' }, async () => {
+  const fetchSpecificTables = async (tables: Set<string> | string[]) => {
+    if (!isSupabaseConfigured() || (typeof document !== 'undefined' && document.hidden)) return;
+    const tableSet = new Set(tables);
+
+    try {
+      if (tableSet.has('receipts')) {
         const { data: recs } = await supabase.from('receipts').select('*');
         if (recs) setReceipts(recs.map(mapSupabaseReceipt));
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, async () => {
+      }
+      if (tableSet.has('members') || tableSet.has('nominees')) {
         const { data: mems } = await supabase.from('members').select('*, nominees(*)');
         if (mems) {
           if (mems.length > 0) {
@@ -1094,14 +1100,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
           setMembers(mems.map(mapSupabaseMember));
         }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'nominees' }, async () => {
-        const { data: mems } = await supabase.from('members').select('*, nominees(*)');
-        if (mems) {
-          setMembers(mems.map(mapSupabaseMember));
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, async () => {
+      }
+      if (tableSet.has('transactions')) {
         const { data: txs } = await supabase.from('transactions').select('*');
         if (txs) {
           setTransactions(txs.map(t => ({
@@ -1118,8 +1118,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             createdAt: t.created_at
           })));
         }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_dues' }, async () => {
+      }
+      if (tableSet.has('monthly_dues')) {
         const { data: duesData } = await supabase.from('monthly_dues').select('*');
         if (duesData) {
           setMonthlyDues(duesData.map(d => ({
@@ -1135,8 +1135,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             lastPaymentDate: d.last_payment_date
           })));
         }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'incomes' }, async () => {
+      }
+      if (tableSet.has('incomes')) {
         const { data: incomesData } = await supabase.from('incomes').select('*');
         if (incomesData) {
           setIncomes(incomesData.map(i => ({
@@ -1152,8 +1152,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             createdAt: i.created_at
           })));
         }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, async () => {
+      }
+      if (tableSet.has('expenses')) {
         const { data: expensesData } = await supabase.from('expenses').select('*');
         if (expensesData) {
           setExpenses(expensesData.map(e => ({
@@ -1171,8 +1171,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             createdAt: e.created_at
           })));
         }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'fdrs' }, async () => {
+      }
+      if (tableSet.has('fdrs')) {
         try {
           const { data: fdrsData, error: fErr } = await supabase.from('fdrs').select('*');
           if (!fErr && fdrsData) {
@@ -1181,67 +1181,110 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             }
             setFdrs(fdrsData.map(mapSupabaseFdr));
           }
-        } catch (err) { /* ignore safe fallback */ }
-      })
-      .subscribe();
+        } catch { /* ignore safe fallback */ }
+      }
+      if (tableSet.has('users')) {
+        const { data: usersData } = await supabase.from('users').select('*');
+        if (usersData) {
+          setUsers(usersData.map(u => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            phone: u.phone,
+            role: u.role,
+            status: u.status,
+            lastLogin: u.last_login,
+            createdAt: u.created_at,
+            avatar: u.avatar || u.avatar_url || ''
+          })));
+        }
+      }
+    } catch (err) {
+      console.warn('Selective table refresh error:', err);
+    }
+  };
+
+  const queueTableRefresh = (tableName: string) => {
+    pendingRefreshTables.current.add(tableName);
+    if (debounceRefreshTimer.current) {
+      clearTimeout(debounceRefreshTimer.current);
+    }
+    // Debounce: coalesce rapid multi-table events within 1200ms into a single batch query
+    debounceRefreshTimer.current = setTimeout(() => {
+      const tablesToFetch = new Set<string>(pendingRefreshTables.current);
+      pendingRefreshTables.current.clear();
+      if (tablesToFetch.size > 0) {
+        fetchSpecificTables(tablesToFetch);
+      }
+    }, 1200);
+  };
+
+  const manualSyncFromSupabase = async () => {
+    if (!isSupabaseConfigured()) {
+      showToast('সুপাবেজ সংযোগ কনফিগার করা নেই', 'info');
+      return;
+    }
+    setIsSupabaseLoading(true);
+    try {
+      await fetchSpecificTables(['settings', 'members', 'receipts', 'transactions', 'incomes', 'expenses', 'fdrs', 'monthly_dues', 'users']);
+      showToast('ডাটাবেজের সাথে সফলভাবে সিঙ্ক সম্পন্ন হয়েছে!', 'success');
+    } catch (err: any) {
+      showToast(`সিঙ্ক ব্যর্থ: ${err.message || 'ত্রুটি'}`, 'error');
+    } finally {
+      setIsSupabaseLoading(false);
+    }
+  };
+
+  // Supabase Realtime Subscription: WebSocket push notifications (Zero bandwidth on idle)
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    const channel = supabase
+      .channel('app-realtime-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'receipts' }, () => queueTableRefresh('receipts'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => queueTableRefresh('members'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nominees' }, () => queueTableRefresh('members'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => queueTableRefresh('transactions'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_dues' }, () => queueTableRefresh('monthly_dues'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'incomes' }, () => queueTableRefresh('incomes'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => queueTableRefresh('expenses'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fdrs' }, () => queueTableRefresh('fdrs'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => queueTableRefresh('users'))
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setIsRealtimeConnected(true);
+        } else {
+          setIsRealtimeConnected(false);
+        }
+      });
 
     return () => {
+      if (debounceRefreshTimer.current) clearTimeout(debounceRefreshTimer.current);
       supabase.removeChannel(channel);
     };
   }, []);
 
-  // Periodic polling every 4 seconds for instant multi-portal sync (Super Admin <-> Accountant)
+  // Smart Re-Focus Sync (Only runs if tab was hidden for >5 minutes, zero background polling)
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
+    let lastActiveTime = Date.now();
 
-    const syncPollInterval = setInterval(async () => {
-      try {
-        const { data: recs } = await supabase.from('receipts').select('*');
-        if (recs) setReceipts(recs.map(mapSupabaseReceipt));
-
-        const { data: mems } = await supabase.from('members').select('*, nominees(*)');
-        if (mems) {
-          if (mems.length > 0) {
-            membersColumnsRef.current = getTableColumns(mems[0]);
-          }
-          setMembers(mems.map(mapSupabaseMember));
+    const handleVisibilityOrFocus = () => {
+      if (!document.hidden) {
+        const elapsed = Date.now() - lastActiveTime;
+        // If tab was inactive for more than 5 minutes (300,000ms), do a single quiet sync
+        if (elapsed > 300000 && isSupabaseConfigured()) {
+          fetchSpecificTables(['receipts', 'members', 'transactions', 'incomes', 'expenses', 'fdrs']);
         }
-
-        const { data: txs } = await supabase.from('transactions').select('*');
-        if (txs) {
-          setTransactions(txs.map(t => ({
-            id: t.id,
-            transactionId: t.transaction_id,
-            date: t.date,
-            type: t.type,
-            refId: t.ref_id,
-            description: t.description,
-            debit: Number(t.debit),
-            credit: Number(t.credit),
-            balance: Number(t.balance),
-            user: t.user_name || 'System',
-            createdAt: t.created_at
-          })));
-        }
-
-        // Safe poll for fdrs
-        try {
-          const { data: fdrsData, error: fErr } = await supabase.from('fdrs').select('*');
-          if (!fErr && fdrsData) {
-            if (fdrsData.length > 0) {
-              fdrsColumnsRef.current = getTableColumns(fdrsData[0]);
-              setFdrs(fdrsData.map(mapSupabaseFdr));
-            } else if (fdrsData.length === 0 && fdrsColumnsRef.current.length > 0) {
-              setFdrs([]);
-            }
-          }
-        } catch (fdrErr) { /* ignore */ }
-      } catch (e) {
-        // silent polling failure catch
+        lastActiveTime = Date.now();
       }
-    }, 4000);
+    };
 
-    return () => clearInterval(syncPollInterval);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+    };
   }, []);
 
   // Sync to local storage
@@ -2754,6 +2797,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   return (
     <AppContext.Provider
       value={{
+        isSupabaseLoading,
+        isRealtimeConnected,
+        manualSyncFromSupabase,
         isAuthenticated,
         setIsAuthenticated,
         language,

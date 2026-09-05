@@ -16,7 +16,8 @@ import {
   SlidersHorizontal,
   ExternalLink,
   Camera,
-  User as UserIcon
+  User as UserIcon,
+  RefreshCw
 } from 'lucide-react';
 import { UserRole } from '../../types';
 import { translations } from '../../utils/translations';
@@ -37,7 +38,10 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
     markNotificationRead, 
     markAllNotificationsRead,
     setIsSearchOpen,
-    setActiveTab
+    setActiveTab,
+    isSupabaseLoading,
+    isRealtimeConnected,
+    manualSyncFromSupabase
   } = useApp();
 
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -145,6 +149,23 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
               {language === 'bn' ? translations['bn'][currentUser.role] : translations['en'][currentUser.role]}
             </span>
           </div>
+
+          {/* Supabase Realtime Zero-Egress Status & Quick Refresh */}
+          <button
+            onClick={manualSyncFromSupabase}
+            disabled={isSupabaseLoading}
+            title={language === 'bn' ? "সুপাবেজ রিয়েলটাইম লাইভ সক্রিয় (শূন্য এগ্রেস মোড)। ক্লিক করে তাৎক্ষণিক রিফ্রেশ করুন।" : "Supabase Realtime Live Active (Zero Egress Mode). Click to refresh."}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/90 rounded-xl transition cursor-pointer disabled:opacity-60"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isRealtimeConnected ? 'bg-emerald-400' : 'bg-amber-400'} opacity-75`}></span>
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${isRealtimeConnected ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+            </span>
+            <span className="hidden md:inline text-[11px] font-bold">
+              {isSupabaseLoading ? (language === 'bn' ? 'সিঙ্ক হচ্ছে...' : 'Syncing...') : (language === 'bn' ? 'লাইভ সিঙ্ক' : 'Live')}
+            </span>
+            <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${isSupabaseLoading ? 'animate-spin' : ''}`} />
+          </button>
 
           {/* Notifications Bell */}
           <div className="relative" ref={notifRef}>
